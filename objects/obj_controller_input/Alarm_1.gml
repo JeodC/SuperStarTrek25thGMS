@@ -7,6 +7,7 @@ audio_stop_sound(mus_title);
 // Check what the player picked
 switch (menu_id) {
 	case "ui.newgame":
+		global.inputmode.mode = InputMode.None;
 		global.game.state = State.Movie;
 		cleanup_buttons();
 		draw_clear_alpha(c_black, 1);

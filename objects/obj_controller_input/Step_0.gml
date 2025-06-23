@@ -43,7 +43,6 @@ switch (global.inputmode.mode) {
 		break;
 }
 
-/// @function: check_input
 /// @description: Updates global.input based on input sources
 function check_input() {
 	
@@ -80,7 +79,6 @@ function check_input() {
     }
 }
 
-/// @function: handle_ui_input
 /// @description: Handles UI button input
 function handle_ui_input() {
 	var buttons = global.active_buttons;
@@ -133,7 +131,6 @@ function handle_ui_input() {
 	}
 }
 
-/// @function: handle_bridge_input
 /// @description: Handles Bridge input
 /// @param {real} mx: Mouse x position
 /// @param {real} my: Mouse y position
@@ -172,60 +169,54 @@ function handle_bridge_input(mx, my) {
 
     // Bridge mode: Hover + Action selection
     if (!global.busy) {
-        // Track previous hover_state to detect changes
         var prev_hover_state = hover_state;
-		
-        // Keyboard / Gamepad
-		if (global.input.left || global.input.right) {
-		    var dir = global.input.left ? -1 : 1;
-		    var next_state = hover_state;
 
-		    repeat (max_state - min_state + 1) {
-		        next_state += dir;
-		        if (next_state > max_state) next_state = min_state;
-		        else if (next_state < min_state) next_state = max_state;
+        // Keyboard / Gamepad navigation
+        if (global.input.left || global.input.right) {
+            var dir = global.input.left ? -1 : 1;
+            var next_state = hover_state;
 
-		        if (hover_state_is_valid(next_state)) {
-		            hover_state = next_state;
-		            break;
-		        }
-		    }
-		}
+            repeat (max_state - min_state + 1) {
+                next_state += dir;
+                if (next_state > max_state) next_state = min_state;
+                else if (next_state < min_state) next_state = max_state;
 
-        // Update input position for keyboard/gamepad navigation
-        if ((global.input.left || global.input.right) &&
-            (global.input.source == InputSource.Keyboard || global.input.source == InputSource.Gamepad)) {
-			// Find region corresponding to hover_state
-			var matched_region = undefined;
-			for (var i = 0; i < array_length(all_regions); i++) {
-			    var r = all_regions[i];
-			    if (r.state == hover_state) {
-			        matched_region = r;
-			        break;
-			    }
-			}
-
-			// Only move the mouse if hover_state is valid (i.e., found in all_regions)
-			if (!is_undefined(matched_region)) {
-			    // Calculate center of the region (in 320x200 room coordinates)
-			    var center_x = (matched_region.x1 + matched_region.x2) / 2;
-			    var center_y = (matched_region.y1 + matched_region.y2) / 2;
-
-			    // Update global input position
-			    global.input.mx = center_x;
-			    global.input.my = center_y;
-
-			    // Scale to window coordinates (e.g., 1280x800)
-			    var window_x = center_x * (window_get_width() / 320);
-			    var window_y = center_y * (window_get_height() / 200);
-
-			    global.input.programmatic_move = true;
-			    window_mouse_set(window_x, window_y);
-			}
+                if (hover_state_is_valid(next_state)) {
+                    hover_state = next_state;
+                    break;
+                }
+            }
         }
 
-        // Mouse
-        if (global.input.source == InputSource.Mouse) {
+        // Update mouse position programmatically if using gamepad/keyboard
+        if ((global.input.left || global.input.right) &&
+            (global.input.source == InputSource.Keyboard || global.input.source == InputSource.Gamepad)) {
+            var matched_region = undefined;
+            for (var i = 0; i < array_length(all_regions); i++) {
+                var r = all_regions[i];
+                if (r.state == hover_state) {
+                    matched_region = r;
+                    break;
+                }
+            }
+
+            if (!is_undefined(matched_region)) {
+                var center_x = (matched_region.x1 + matched_region.x2) / 2;
+                var center_y = (matched_region.y1 + matched_region.y2) / 2;
+
+                global.input.mx = center_x;
+                global.input.my = center_y;
+
+                var window_x = center_x * (window_get_width() / 320);
+                var window_y = center_y * (window_get_height() / 200);
+
+                global.input.programmatic_move = true;
+                window_mouse_set(window_x, window_y);
+            }
+        }
+
+        // Mouse-based hover detection (only if mouse is inside the window)
+        if (global.input.source == InputSource.Mouse && mouse_in_window()) {
             var new_hover = HoverState.None;
             for (var i = 0; i < array_length(all_regions); i++) {
                 var r = all_regions[i];
@@ -237,43 +228,42 @@ function handle_bridge_input(mx, my) {
             hover_state = new_hover;
         }
 
-        // Action Trigger
-		if (global.input.confirm) {
-			action = hover_state;
-			last_state = hover_state;
-		    execute_hover_action(action);
-		    global.input.confirm = false;
-		}
-		
-		// Check shortcuts
-		check_shortcuts();
+        // Confirm action
+        if (global.input.confirm) {
+            action = hover_state;
+            last_state = hover_state;
+            execute_hover_action(action);
+            global.input.confirm = false;
+        }
+
+        // Check custom input shortcuts
+        check_shortcuts();
     }
-	
-	if (!global.busy && array_length(global.queue) == 0 && !is_undefined(last_state) && global.input.source != InputSource.Mouse) {
-	    hover_state = last_state;
 
-	    // Optionally reposition mouse to match restored hover
-	    for (var i = 0; i < array_length(all_regions); i++) {
-	        var r = all_regions[i];
-	        if (r.state == hover_state) {
-	            var center_x = (r.x1 + r.x2) / 2;
-	            var center_y = (r.y1 + r.y2) / 2;
+    // Restore hover after action queue clears (non-mouse input)
+    if (!global.busy && array_length(global.queue) == 0 && !is_undefined(last_state) && global.input.source != InputSource.Mouse) {
+        hover_state = last_state;
 
-	            global.input.mx = center_x;
-	            global.input.my = center_y;
+        for (var i = 0; i < array_length(all_regions); i++) {
+            var r = all_regions[i];
+            if (r.state == hover_state) {
+                var center_x = (r.x1 + r.x2) / 2;
+                var center_y = (r.y1 + r.y2) / 2;
 
-	            var window_x = center_x * (window_get_width() / 320);
-	            var window_y = center_y * (window_get_height() / 200);
-	            window_mouse_set(window_x, window_y);
-	            break;
-	        }
-	    }
+                global.input.mx = center_x;
+                global.input.my = center_y;
 
-	   last_state = undefined; // Clear once restored
-	}
+                var window_x = center_x * (window_get_width() / 320);
+                var window_y = center_y * (window_get_height() / 200);
+                window_mouse_set(window_x, window_y);
+                break;
+            }
+        }
+
+        last_state = undefined;
+    }
 }
 
-/// @function: execute_hover_action
 /// @description: Handles executing a hover action
 function execute_hover_action(action) {
     // Stop voice playback
@@ -296,7 +286,6 @@ function execute_hover_action(action) {
     }
 }
 
-/// @function: handle_hover_action
 /// @description: Routes actions based on selected hover state
 /// @param {real} action: hover_state enum
 function handle_hover_action(action) {
@@ -423,7 +412,6 @@ function handle_hover_action(action) {
     }
 }
 
-/// @function: handle_warp_input
 /// @description: Handles input for warp navigation mode
 function handle_warp_input() {
 	
@@ -501,7 +489,6 @@ function handle_warp_input() {
     }
 }
 
-/// @function: handle_impulse_input
 /// @description: Handles input for impulse movement mode
 function handle_impulse_input() {
     var sector = global.galaxy[global.ent.sx][global.ent.sy];
@@ -573,7 +560,6 @@ function handle_impulse_input() {
     }
 }
 
-/// @function: handle_torpedo_input
 /// @description: Handles input for torpedo firing
 function handle_torpedo_input() {
 	
@@ -649,7 +635,6 @@ function handle_torpedo_input() {
 }
 
 
-/// @function: handle_manage_input
 /// @description: Handles input for shield/phasers power management
 function handle_manage_input() {
     if (obj_controller_dialog.show_text) return;
@@ -701,7 +686,6 @@ function handle_manage_input() {
     }
 }
 
-/// @function: reset_inputmode
 /// @description: Resets input mode to bridge and clears temp values
 function reset_inputmode() {
     global.inputmode.mode = InputMode.Bridge;
@@ -711,7 +695,6 @@ function reset_inputmode() {
     global.busy = true;
 }
 
-/// @function: reset_input
 /// @description: Resets the input struct to default
 function reset_input() {
 	global.input = {
@@ -728,7 +711,6 @@ function reset_input() {
 	};
 }
 
-/// @function: get_input_source
 /// @description: Updates global.input.source
 /// @param {real} old_mx: Old mouse x
 /// @param {real} old_my: Old mouse y
@@ -736,8 +718,8 @@ function get_input_source(old_mx, old_my) {
     if (keyboard_check_pressed(vk_anykey)) {
         global.input.source = InputSource.Keyboard;
         global.input.programmatic_move = false; // Reset flag on keyboard input
-    } else if (!global.input.programmatic_move && 
-               (mouse_check_button_pressed(mb_any) || 
+    } else if (!global.input.programmatic_move && mouse_in_window() &&
+               (mouse_check_button_pressed(mb_any) ||
                 (mouse_x != old_mx || mouse_y != old_my))) {
         global.input.source = InputSource.Mouse;
         global.input.programmatic_move = false; // Reset flag on actual mouse input
@@ -752,7 +734,12 @@ function get_input_source(old_mx, old_my) {
     }
 }
 
-/// @function: assign_input()
+/// @description: Returns true if the mouse is within the window (room) bounds
+function mouse_in_window() {
+    return mouse_x >= 0 && mouse_x < room_width &&
+           mouse_y >= 0 && mouse_y < room_height;
+}
+
 /// @description: Assigns input based on source
 function assign_input() {
 	global.input.confirm = keyboard_check_pressed(vk_space)
@@ -792,7 +779,6 @@ function check_shortcuts() {
 	execute_hover_action(action);
 }
 
-/// @function: button_listener
 /// @desciption: Feedback if a UI button is pressed
 /// @param {array} buttons: Array of UI buttons to listen to
 function button_listener(buttons) {
@@ -814,7 +800,6 @@ function button_listener(buttons) {
 	}
 }
 
-/// @function: check_hotspot_valid
 /// @desciption: Check if a selected hotspot is valid
 /// @param {any} state: The enum HoverState to check
 function hover_state_is_valid(state) {
