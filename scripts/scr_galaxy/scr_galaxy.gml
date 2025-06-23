@@ -28,24 +28,29 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
 
         // Precompute valid cells with clearance
         var valid_cells = [];
+        var occupied_map = create_coord_map(all_occupied_cells, true); // Use sector-specific keys
         for (var i = 0; i < array_length(s.available_cells); i++) {
             var lx = s.available_cells[i][0];
             var ly = s.available_cells[i][1];
             var too_close = false;
 
-            for (var j = 0; j < array_length(all_occupied_cells); j++) {
-                if (all_occupied_cells[j][0] == sx && all_occupied_cells[j][1] == sy) {
-                    var dx = all_occupied_cells[j][2] - lx;
-                    var dy = all_occupied_cells[j][3] - ly;
-                    if (abs(dx) <= 1 && abs(dy) <= 1) {
-                        too_close = true;
-                        break;
+            for (var dx = -1; dx <= 1; dx++) {
+                for (var dy = -1; dy <= 1; dy++) {
+                    var nx = lx + dx;
+                    var ny = ly + dy;
+                    if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
+                        if (has_coord_map(occupied_map, nx, ny, sx, sy)) {
+                            too_close = true;
+                            break;
+                        }
                     }
                 }
+                if (too_close) break;
             }
 
             if (!too_close) array_push(valid_cells, [lx, ly]);
         }
+        ds_map_destroy(occupied_map);
 
         // Skip if no valid cells
         if (array_length(valid_cells) == 0) continue;
@@ -94,10 +99,10 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
             array_push(all_occupied_cells, [sx, sy, lx, ly]);
             array_push(temp_occupied, [lx, ly]);
 
-            // Remove used cell from available_cells
+            // Remove used cell
             remove_coord(s.available_cells, lx, ly);
 
-            // Remove used cell from valid_cells
+            // Update valid_cells
             valid_cells[idx] = valid_cells[valid_cells_length - 1];
             array_pop(valid_cells);
             valid_cells_length--;
@@ -106,7 +111,7 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
             placed++;
         }
 
-        // Update sector if enemies were placed
+        // Update sector
         if (placed > 0) {
             s.enemynum += placed;
             global.galaxy[sx][sy] = s;
@@ -204,9 +209,9 @@ function place_starbases(base_count, total_bases, all_occupied_cells) {
     return base_count;
 }
 
-/// @function: place_stars
 /// @description: Places stars with 3x3 clearance, enforcing unique row/column for first 8 stars
 /// @param {array} all_occupied_cells - Reference array to track placed positions
+// @description: Places stars with 3x3 clearance, enforcing unique row/column for first 8 stars
 function place_stars(all_occupied_cells) {
     for (var sx = 0; sx < 8; sx++) {
         for (var sy = 0; sy < 8; sy++) {
@@ -215,18 +220,18 @@ function place_stars(all_occupied_cells) {
             s.star_positions = [];
             var reserved_cells = [];
 
-            // Bitfields for row/column tracking
+            // Bitfields for row/column
             var used_rows = 0;
             var used_cols = 0;
 
-            // Cache sector-specific occupied cells as ds_map
+            // Cache sector-specific occupied cells
             var sector_occupied = [];
             for (var i = 0; i < array_length(all_occupied_cells); i++) {
                 if (all_occupied_cells[i][0] == sx && all_occupied_cells[i][1] == sy) {
                     array_push(sector_occupied, [all_occupied_cells[i][2], all_occupied_cells[i][3]]);
                 }
             }
-            var sector_occupied_map = create_coord_map(sector_occupied);
+            var sector_occupied_map = create_coord_map(sector_occupied, false);
 
             var tries = 0;
             var max_tries = 50;
@@ -241,16 +246,19 @@ function place_stars(all_occupied_cells) {
                     }
 
                     var too_close = false;
-                    for (var j = 0; j < array_length(s.star_positions); j++) {
-                        var dx = s.star_positions[j][0] - lx;
-                        var dy = s.star_positions[j][1] - ly;
-                        if (abs(dx) <= 1 && abs(dy) <= 1) {
-                            too_close = true;
-                            break;
+                    for (var dx = -1; dx <= 1; dx++) {
+                        for (var dy = -1; dy <= 1; dy++) {
+                            var nx = lx + dx;
+                            var ny = ly + dy;
+                            if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
+                                if (has_coord_map(sector_occupied_map, nx, ny) || 
+                                    has_coord(s.star_positions, nx, ny)) {
+                                    too_close = true;
+                                    break;
+                                }
+                            }
                         }
-                    }
-                    if (!too_close && has_coord_map(sector_occupied_map, lx, ly)) {
-                        too_close = true;
+                        if (too_close) break;
                     }
 
                     if (!too_close) array_push(valid_candidates, [lx, ly, i]);
@@ -264,7 +272,6 @@ function place_stars(all_occupied_cells) {
                 var choice = valid_candidates[irandom(array_length(valid_candidates) - 1)];
                 var lx = choice[0];
                 var ly = choice[1];
-                var index = choice[2];
 
                 array_push(s.star_positions, [lx, ly]);
                 if (array_length(s.star_positions) <= 8) {
@@ -275,6 +282,7 @@ function place_stars(all_occupied_cells) {
                 ds_map_add(sector_occupied_map, string(lx) + "," + string(ly), true);
                 array_push(sector_occupied, [lx, ly]);
 
+                // Remove star and surrounding cells
                 for (var dx = -1; dx <= 1; dx++) {
                     for (var dy = -1; dy <= 1; dy++) {
                         var nx = lx + dx;
@@ -285,7 +293,7 @@ function place_stars(all_occupied_cells) {
                         }
                     }
                 }
-                array_delete(s.available_cells, index, 1); // Use index for star
+
                 tries = 0;
             }
 
@@ -531,18 +539,20 @@ function has_coord(cell_array, lx, ly, sx=undefined, sy=undefined) {
 
 /// @description: Removes the coordinate (lx, ly) from `cell_array` if found.
 function remove_coord(cell_array, lx, ly) {
-    for (var i = 0; i < array_length(cell_array); i++) {
-        if (cell_array[i][0] == lx && cell_array[i][1] == ly) {
-            array_delete(cell_array, i, 1);
-            return;
-        }
-    }
+	var i = 0;
+	while (i < array_length(cell_array)) {
+		if (cell_array[i][0] == lx && cell_array[i][1] == ly) {
+			array_delete(cell_array, i, 1);
+		} else {
+		i++;
+		}
+	}
 }
 
 /// @description: Ensures no occupied cells are in available_cells
 function validate_available_cells(all_occupied_cells) {
-    if (!debug_mode) return; // Skip in release builds
     var occupied_map = create_coord_map(all_occupied_cells, true);
+    var errors = 0;
     for (var sx = 0; sx < 8; sx++) {
         for (var sy = 0; sy < 8; sy++) {
             var s = global.galaxy[sx][sy];
@@ -551,11 +561,15 @@ function validate_available_cells(all_occupied_cells) {
                 var ly = s.available_cells[i][1];
                 if (has_coord_map(occupied_map, lx, ly, sx, sy)) {
                     show_debug_message("Error: Occupied cell [" + string(lx) + "," + string(ly) + "] in sector [" + string(sx) + "," + string(sy) + "] is in available_cells.");
+                    errors++;
                 }
             }
         }
     }
     ds_map_destroy(occupied_map);
+    if (errors > 0) {
+        show_debug_message("Validation failed with " + string(errors) + " errors. Consider debugging placement logic.");
+    }
 }
 
 /// @description: Restores reserved cells to available_cells, excluding occupied cells

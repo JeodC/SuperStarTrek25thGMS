@@ -21,6 +21,9 @@
   "ui.return": "To Game",
   "ui.quit": "To Title",
   
+  "ui.scale1": "Stretch to Fit",
+  "ui.scale2": "Integer Scale",
+  
   "lang.en": "English",
   "lang.cs": "Czech",
   "lang.ca": "Catalan",

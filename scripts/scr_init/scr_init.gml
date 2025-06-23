@@ -18,7 +18,7 @@ function scr_init() {
 	// Init
 	init_scale(4);
 	load_options();
-	init_languages();	
+	init_languages();
 	init_game();
 }
 

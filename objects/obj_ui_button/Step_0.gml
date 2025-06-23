@@ -17,6 +17,15 @@ if (menu_id == "ui.continue" && !can_continue) {
     is_disabled = true;
 }
 
+// Dynamic label for scale
+if (menu_id == "ui.scale") {
+    sprite_index = spr_btn_rect_long;
+	switch (global.scale) {
+		case 0: text = lang_get("ui.scale1"); break; // Stretch to fit
+		case 1: text = lang_get("ui.scale2"); break; // Integer scale
+	}
+}
+
 // Dynamic label for subtitles mode
 if (menu_id == "ui.subtitles") {
 	sprite_index = spr_btn_rect_long;

@@ -33,38 +33,39 @@ function queue_next_enemy_attack(i, post) {
     var targets = player.attack_targets;
     
 	// Check if all attacks have been processed
-    if (i >= array_length(targets)) {
-        array_push(global.queue, function() {
-			var data = obj_controller_player._data;
-            show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
-			
-			// Restore the old input mode
-			global.inputmode.mode = global.inputmode.tmp_old;
-			
-            // Handle post-attack movement
-            if (global.ent.condition != Condition.Destroyed) {
-				// If data.post is a large array it contains path data, queue up the impulse move
-                if (is_array(data.post) && array_length(data.post) > 0 && is_array(data.post[0])) {
-                    global.ent.impulse_move(data.post);
-                }
-				// Otherwise it must be the warp data
-				else if (is_array(data.post) && array_length(data.post) == 2) {
-                    var tx = data.post[0];
-                    var ty = data.post[1];
-                    change_sector(tx, ty);
-                }
-            }
-			
-			// Clear attack sequence arrays and clean up stale data
-            obj_controller_player.attack_targets = [];
-            obj_controller_player.attack_buffer = [];
-            obj_controller_player.attack_indexes = [];
-            data.post = undefined;
-            global.busy = false;
-            return undefined;
-        });
-        return;
-    }
+	if (i >= array_length(targets)) {
+	    array_push(global.queue, function() {
+	        var data = obj_controller_player._data;
+	        show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
+	        global.inputmode.mode = global.inputmode.tmp_old;
+	        if (global.ent.condition != Condition.Destroyed) {
+				// If it's a big array it's impulse path
+	            if (is_array(data.post) && array_length(data.post) > 0 && is_array(data.post[0])) {
+	                global.ent.impulse_move(data.post);
+				// Else it's warp coordinates
+	            } else if (is_array(data.post) && array_length(data.post) == 2) {
+	                var tx = data.post[0];
+	                var ty = data.post[1];
+	                show_debug_message("Warping to sector: [" + string(tx) + "," + string(ty) + "]");
+	                change_sector(tx, ty);
+	            }
+	        }
+	        return { delay: 10 };
+	    });
+		
+		// Cleanup
+	    array_push(global.queue, function() {
+	        obj_controller_player.attack_targets = [];
+	        obj_controller_player.attack_buffer = [];
+	        obj_controller_player.attack_indexes = [];
+	        obj_controller_player._data = undefined;
+	        global.queue = [];
+	        global.index = 0;
+	        global.busy = false;
+	        return undefined;
+	    });
+	    return;
+	}
     
 	// Capture which enemy we'll be using for this attack
     var e = targets[i];
@@ -249,7 +250,6 @@ function queue_next_enemy_attack(i, post) {
     array_push(global.queue, function() {
         var idx = obj_controller_player.attack_indexes[global.index];
 		var data = obj_controller_player._data;
-        obj_controller_player.attack_buffer[idx] = undefined;
         queue_next_enemy_attack(data.i + 1, data.post);
     });
     

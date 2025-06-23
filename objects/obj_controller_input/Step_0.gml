@@ -76,7 +76,7 @@ function check_input() {
 function get_input_source() {
     if (keyboard_check_pressed(vk_anykey)) {
         global.input.source = InputSource.Keyboard;
-    } else if (mouse_check_button_pressed(mb_any)) {
+    } else if (mouse_check_button_pressed(mb_any) || (mouse_x != last_mx || mouse_y != last_my)) {
         global.input.source = InputSource.Mouse;
     } else if (gamepad_is_connected(0)) {
         for (var i = 0; i < array_length(gp_buttons); i++) {
@@ -200,23 +200,22 @@ function handle_bridge_input() {
         }
 
         // Mouse input: Select hover_state based on click
-        if (global.input.source == InputSource.Mouse && global.input.confirm) {
-            var mx = device_mouse_x_to_gui(0);
-            var my = device_mouse_y_to_gui(0);
-            var new_hover = HoverState.None;
-            for (var i = 0; i < array_length(all_regions); i++) {
-                var r = all_regions[i];
-                if (mx >= r.x1 && mx <= r.x2 && my >= r.y1 && my <= r.y2) {
-                    new_hover = r.state;
-                    break;
-                }
-            }
-            if (new_hover != HoverState.None) {
-                hover_state = new_hover;
-                // Update virtual cursor position
-                update_virtual_cursor(hover_state);
-            }
-        }
+		if (global.input.source == InputSource.Mouse) {
+		    var mx = device_mouse_x_to_gui(0);
+		    var my = device_mouse_y_to_gui(0);
+		    var new_hover = HoverState.None;
+		    for (var i = 0; i < array_length(all_regions); i++) {
+		        var r = all_regions[i];
+		        if (mx >= r.x1 && mx <= r.x2 && my >= r.y1 && my <= r.y2) {
+		            new_hover = r.state;
+		            break;
+		        }
+		    }
+		    if (new_hover != HoverState.None && new_hover != hover_state) {
+		        hover_state = new_hover;
+		        update_virtual_cursor(hover_state);
+		    }
+		}
 
         // Confirm action
         if (global.input.confirm) {
@@ -235,11 +234,6 @@ function handle_bridge_input() {
         if (hover_state_is_valid(last_state)) {
             hover_state = last_state;
             update_virtual_cursor(hover_state);
-            show_debug_message("Restored Hover: " + string([global.input.mx, global.input.my]) +
-                               ", HoverState: " + string(hover_state) +
-                               ", Source: " + string(global.input.source));
-        } else {
-            show_debug_message("Invalid Last State: " + string(last_state));
         }
         last_state = undefined;
     }
@@ -258,13 +252,10 @@ function update_virtual_cursor(state) {
     if (!is_undefined(matched_region)) {
         global.input.mx = (matched_region.x1 + matched_region.x2) / 2;
         global.input.my = (matched_region.y1 + matched_region.y2) / 2;
-        show_debug_message("Virtual Cursor Set: " + string([global.input.mx, global.input.my]) +
-                           ", HoverState: " + string(state));
     } else {
         global.input.mx = 0;
         global.input.my = 0;
         hover_state = HoverState.None;
-        show_debug_message("No Region for State: " + string(state));
     }
 }
 
@@ -289,7 +280,6 @@ function hover_state_is_valid(state) {
     for (var i = 0; i < array_length(all_regions); i++) {
         if (all_regions[i].state == state) return true;
     }
-    show_debug_message("Invalid State: " + string(state) + ", Regions: " + string(array_length(all_regions)));
     return false;
 }
 
@@ -735,9 +725,6 @@ function handle_manage_input() {
                 global.input.mx = bx;
                 global.input.my = by_confirm;
             }
-            
-            show_debug_message("Mouse Manage Cursor: " + string([global.input.mx, global.input.my]) +
-                               ", Hover: Up=" + string(in_up) + ", Down=" + string(in_down) + ", Confirm=" + string(in_confirm));
             
             // Handle click actions
             if (global.input.confirm) {
