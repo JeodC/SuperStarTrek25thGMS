@@ -132,6 +132,9 @@ function update_movie_animation() {
         image_index = 106;
 		init_credits();
     }
+	else if (sprite_index == spr_bg_stars) {
+		init_credits();
+	}
 }
 
 /// @description Add a new credit line with dynamic timer and spacing
@@ -200,15 +203,23 @@ function add_stats_lines() {
                 lang_get("stats.header"),
                 lang_format("stats.shipsdestroyed", { totalenemies: global.game.initenemies }),
                 lang_format("stats.daysleft", { daysleft: days }),
-                lang_format("stats.difficulty", { difficulty: diff }),
+                lang_format("stats.difficulty", { difficulty: global.game.difficulty }),
                 lang_format("stats.score", { score: global.score })
             ];
             var spacing = 15;
+            // Initialize final Y positions for stats (e.g., centered in room)
+            var stats_final_y = [
+                room_height / 2 - 2 * spacing, // Header
+                room_height / 2 - 1 * spacing, // Ships destroyed
+                room_height / 2,               // Days left
+                room_height / 2 + 1 * spacing, // Difficulty
+                room_height / 2 + 2 * spacing  // Score
+            ];
             for (var i = 0; i < array_length(stat_texts); i++) {
                 array_push(credits_lines, {
                     text: stat_texts[i],
                     y: room_height + i * spacing,
-                    final_y: stats_final_y[i],
+                    final_y: stats_final_y[i]
                 });
             }
             stats_added = true;

@@ -1,14 +1,11 @@
-/// @function: place_enemies
 /// @description: Places enemies with 3x3 cell clearance
 /// @param {real} enemy_count - Number of enemies already placed
 /// @param {real} total_enemies - Target number of enemies to place
 /// @param {array} all_occupied_cells - Reference array to track placed positions
 function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
-    // Limit placement attempts to avoid long loops
     var attempts = 0;
-    var max_attempts = min(total_enemies * 10, 400);
+    var max_attempts = min(total_enemies * 5, 200);
 
-    // Main placement loop
     while (enemy_count < total_enemies && attempts < max_attempts) {
         attempts++;
 
@@ -17,35 +14,25 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
         var sy = irandom(7);
         var s = global.galaxy[sx][sy];
 
+        // Skip if sector is full
+        if (s.enemynum >= 3) continue;
+
         // Random fleet size: 15% chance for 2, 10% chance for 3
         var r1 = irandom_range(1, 20);
         var fleet_size = 1;
         if (r1 > 18) fleet_size = 3;
         else if (r1 > 15) fleet_size = 2;
 
-        // Clamp fleet size so we don't exceed total needed
-        if (enemy_count + fleet_size > total_enemies) {
-            fleet_size = total_enemies - enemy_count;
-        }
+        // Clamp fleet size
+        fleet_size = min(fleet_size, total_enemies - enemy_count, 3 - s.enemynum);
 
-        // Clamp to available space in this sector (max 3)
-        var max_allowed = 3 - s.enemynum;
-        if (max_allowed <= 0) continue;
-        if (fleet_size > max_allowed) fleet_size = max_allowed;
-
-        // Shuffle the sector’s available local cells
-        s.available_cells = array_shuffle(s.available_cells);
-
-        var placed = 0;
-        var temp_occupied = []; // Track enemies placed in this fleet
-
-        // Attempt to place fleet members in this sector
-        for (var i = 0; i < array_length(s.available_cells) && placed < fleet_size; i++) {
+        // Precompute valid cells with clearance
+        var valid_cells = [];
+        for (var i = 0; i < array_length(s.available_cells); i++) {
             var lx = s.available_cells[i][0];
             var ly = s.available_cells[i][1];
-
-            // Check clearance against all occupied cells and temp_occupied
             var too_close = false;
+
             for (var j = 0; j < array_length(all_occupied_cells); j++) {
                 if (all_occupied_cells[j][0] == sx && all_occupied_cells[j][1] == sy) {
                     var dx = all_occupied_cells[j][2] - lx;
@@ -56,6 +43,25 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
                     }
                 }
             }
+
+            if (!too_close) array_push(valid_cells, [lx, ly]);
+        }
+
+        // Skip if no valid cells
+        if (array_length(valid_cells) == 0) continue;
+
+        // Place fleet members
+        var placed = 0;
+        var temp_occupied = [];
+        var valid_cells_length = array_length(valid_cells);
+
+        while (placed < fleet_size && valid_cells_length > 0) {
+            var idx = irandom(valid_cells_length - 1);
+            var lx = valid_cells[idx][0];
+            var ly = valid_cells[idx][1];
+
+            // Check clearance against temp_occupied
+            var too_close = false;
             for (var j = 0; j < array_length(temp_occupied); j++) {
                 var dx = temp_occupied[j][0] - lx;
                 var dy = temp_occupied[j][1] - ly;
@@ -64,10 +70,14 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
                     break;
                 }
             }
+            if (too_close) {
+                valid_cells[idx] = valid_cells[valid_cells_length - 1];
+                array_pop(valid_cells);
+                valid_cells_length--;
+                continue;
+            }
 
-            if (too_close) continue;
-
-            // Create and initialize the enemy ship
+            // Create and initialize enemy ship
             var e = EnemyShip();
             e.sx = sx;
             e.sy = sy;
@@ -75,7 +85,6 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
             e.ly = ly;
             e.dir = irandom(4);
 
-            // Scale energy based on game difficulty
             var kenergy = (50 + irandom(100)) / 100.0;
             e.maxenergy = round(global.game.enemypower * kenergy);
             e.energy = e.maxenergy;
@@ -83,23 +92,27 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
             // Add to global state
             array_push(global.allenemies, e);
             array_push(all_occupied_cells, [sx, sy, lx, ly]);
-            array_push(temp_occupied, [lx, ly]); // Track for this fleet
+            array_push(temp_occupied, [lx, ly]);
+
+            // Remove used cell from available_cells
+            remove_coord(s.available_cells, lx, ly);
+
+            // Remove used cell from valid_cells
+            valid_cells[idx] = valid_cells[valid_cells_length - 1];
+            array_pop(valid_cells);
+            valid_cells_length--;
+
             enemy_count++;
             placed++;
-
-            // Remove the used cell and adjust loop
-            array_delete(s.available_cells, i, 1);
-            i--;
         }
 
-        // Only update sector if we placed something
+        // Update sector if enemies were placed
         if (placed > 0) {
             s.enemynum += placed;
             global.galaxy[sx][sy] = s;
         }
     }
 
-    // Warn if max attempts reached
     if (attempts >= max_attempts) {
         show_debug_message("Warning: Reached max attempts in place_enemies. Placed " + string(enemy_count) + " out of " + string(total_enemies));
     }
@@ -107,94 +120,140 @@ function place_enemies(enemy_count, total_enemies, all_occupied_cells) {
     return enemy_count;
 }
 
-/// @description: Tests available cells in sectors and places starbases
+/// @function: place_starbases
+/// @description: Places starbases with 3x3 cell clearance
+/// @param {real} base_count - Number of starbases already placed
+/// @param {real} total_bases - Target number of starbases to place
+/// @param {array} all_occupied_cells - Reference array to track placed positions
 function place_starbases(base_count, total_bases, all_occupied_cells) {
-    while (base_count < total_bases) {
-        var sx = irandom(7);
-        var sy = irandom(7);
-        var s = global.galaxy[sx][sy];
-        if (s.basenum == 0 && array_length(s.available_cells) > 0) {
-            s.basenum = 1;
-            s.available_cells = array_shuffle(s.available_cells);
-            
-            var base_cell = s.available_cells[0];
-            var lx = base_cell[0];
-            var ly = base_cell[1];
-            array_push(all_occupied_cells, [sx, sy, lx, ly]);
-            array_delete(s.available_cells, 0, 1);
-
-            var base = Starbase();
-            base.sx = sx;
-            base.sy = sy;
-            base.lx = lx;
-            base.ly = ly;
-            //base.energy = irandom_range(9000, 15000);
-            base.num = base_count;
-            array_push(global.allbases, base);
-            base_count++;
-
-            global.galaxy[sx][sy] = s;
+    // Cache valid sectors
+    var valid_sectors = [];
+    for (var sx = 0; sx < 8; sx++) {
+        for (var sy = 0; sy < 8; sy++) {
+            var s = global.galaxy[sx][sy];
+            if (s.basenum == 0 && array_length(s.available_cells) > 0) {
+                array_push(valid_sectors, [sx, sy]);
+            }
         }
     }
+
+    // Shuffle sectors for randomness
+    valid_sectors = array_shuffle(valid_sectors);
+
+    // Limit attempts
+    var attempts = 0;
+    var max_attempts = total_bases * 10;
+
+    var sector_idx = 0;
+    while (base_count < total_bases && sector_idx < array_length(valid_sectors) && attempts < max_attempts) {
+        attempts++;
+        var sx = valid_sectors[sector_idx][0];
+        var sy = valid_sectors[sector_idx][1];
+        var s = global.galaxy[sx][sy];
+        sector_idx++;
+
+        // Precompute valid cells with 3x3 clearance
+        var valid_cells = [];
+        for (var i = 0; i < array_length(s.available_cells); i++) {
+            var lx = s.available_cells[i][0];
+            var ly = s.available_cells[i][1];
+            var too_close = false;
+
+            for (var j = 0; j < array_length(all_occupied_cells); j++) {
+                if (all_occupied_cells[j][0] == sx && all_occupied_cells[j][1] == sy) {
+                    var dx = all_occupied_cells[j][2] - lx;
+                    var dy = all_occupied_cells[j][3] - ly;
+                    if (abs(dx) <= 1 && abs(dy) <= 1) {
+                        too_close = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!too_close) array_push(valid_cells, [lx, ly]);
+        }
+
+        if (array_length(valid_cells) == 0) continue;
+
+        // Pick random valid cell
+        var base_cell = valid_cells[irandom(array_length(valid_cells) - 1)];
+        var lx = base_cell[0];
+        var ly = base_cell[1];
+
+        // Place starbase
+        s.basenum = 1;
+        array_push(all_occupied_cells, [sx, sy, lx, ly]);
+        remove_coord(s.available_cells, lx, ly);
+
+        var base = Starbase();
+        base.sx = sx;
+        base.sy = sy;
+        base.lx = lx;
+        base.ly = ly;
+        base.num = base_count;
+        array_push(global.allbases, base);
+        base_count++;
+
+        global.galaxy[sx][sy] = s;
+    }
+
+    if (attempts >= max_attempts) {
+        show_debug_message("Warning: Reached max attempts in place_starbases. Placed " + string(base_count) + " out of " + string(total_bases));
+    }
+
     return base_count;
 }
 
-/// @description: Places stars, enforcing one per row/column first, then two, etc.
+/// @function: place_stars
+/// @description: Places stars with 3x3 clearance, enforcing unique row/column for first 8 stars
+/// @param {array} all_occupied_cells - Reference array to track placed positions
 function place_stars(all_occupied_cells) {
     for (var sx = 0; sx < 8; sx++) {
         for (var sy = 0; sy < 8; sy++) {
             var s = global.galaxy[sx][sy];
             s.starnum = irandom_range(1, global.game.maxstars);
             s.star_positions = [];
-            var reserved_cells = []; // Track reserved cells for this sector
-            
-            // Use boolean arrays for quick row/col checks
-            var used_rows = array_create(8, false); // ly used?
-            var used_cols = array_create(8, false); // lx used?
+            var reserved_cells = [];
 
-            var row_counts = array_create(8, 0); // Stars per row (ly)
-            var col_counts = array_create(8, 0); // Stars per column (lx)
+            // Bitfields for row/column tracking
+            var used_rows = 0;
+            var used_cols = 0;
+
+            // Cache sector-specific occupied cells as ds_map
+            var sector_occupied = [];
+            for (var i = 0; i < array_length(all_occupied_cells); i++) {
+                if (all_occupied_cells[i][0] == sx && all_occupied_cells[i][1] == sy) {
+                    array_push(sector_occupied, [all_occupied_cells[i][2], all_occupied_cells[i][3]]);
+                }
+            }
+            var sector_occupied_map = create_coord_map(sector_occupied);
 
             var tries = 0;
-            while (array_length(s.star_positions) < s.starnum && tries < 100 && array_length(s.available_cells) > 0) {
-                // Find valid candidates
+            var max_tries = 50;
+            while (array_length(s.star_positions) < s.starnum && tries < max_tries && array_length(s.available_cells) > 0) {
                 var valid_candidates = [];
                 for (var i = 0; i < array_length(s.available_cells); i++) {
                     var lx = s.available_cells[i][0];
                     var ly = s.available_cells[i][1];
 
-                    // For first 8 stars, enforce unique row/column
                     if (array_length(s.star_positions) < 8) {
-                        if (used_rows[ly] || used_cols[lx]) {
-                            continue;
-                        }
+                        if (used_rows & (1 << ly) || used_cols & (1 << lx)) continue;
                     }
-                    
-                    // Check distance to all placed stars and enemies
+
                     var too_close = false;
                     for (var j = 0; j < array_length(s.star_positions); j++) {
-                        var star = s.star_positions[j];
-                        var dx = star[0] - lx;
-                        var dy = star[1] - ly;
+                        var dx = s.star_positions[j][0] - lx;
+                        var dy = s.star_positions[j][1] - ly;
                         if (abs(dx) <= 1 && abs(dy) <= 1) {
                             too_close = true;
                             break;
                         }
                     }
-                    for (var j = 0; j < array_length(all_occupied_cells); j++) {
-                        if (all_occupied_cells[j][0] == sx && all_occupied_cells[j][1] == sy) {
-                            var dx = all_occupied_cells[j][2] - lx;
-                            var dy = all_occupied_cells[j][3] - ly;
-                            if (abs(dx) <= 1 && abs(dy) <= 1) {
-                                too_close = true;
-                                break;
-                            }
-                        }
+                    if (!too_close && has_coord_map(sector_occupied_map, lx, ly)) {
+                        too_close = true;
                     }
 
-                    if (!too_close) {
-                        array_push(valid_candidates, [lx, ly, i, row_counts[ly], col_counts[lx]]);
-                    }
+                    if (!too_close) array_push(valid_candidates, [lx, ly, i]);
                 }
 
                 if (array_length(valid_candidates) == 0) {
@@ -202,137 +261,134 @@ function place_stars(all_occupied_cells) {
                     continue;
                 }
 
-                // Prioritize candidates with minimal row+column counts
-                var min_count = 999;
-                var best_candidates = [];
-                for (var i = 0; i < array_length(valid_candidates); i++) {
-                    var count = valid_candidates[i][3] + valid_candidates[i][4]; // row_count + col_count
-                    if (count < min_count) {
-                        best_candidates = [valid_candidates[i]];
-                        min_count = count;
-                    } else if (count == min_count) {
-                        array_push(best_candidates, valid_candidates[i]);
-                    }
-                }
-
-                // Select a random best candidate
-                var choice = best_candidates[irandom(array_length(best_candidates) - 1)];
+                var choice = valid_candidates[irandom(array_length(valid_candidates) - 1)];
                 var lx = choice[0];
                 var ly = choice[1];
-                var candidate_index = choice[2];
+                var index = choice[2];
 
-                // Place star
-                var candidate = [lx, ly];
-                array_push(s.star_positions, candidate);
+                array_push(s.star_positions, [lx, ly]);
                 if (array_length(s.star_positions) <= 8) {
-                    used_rows[ly] = true;
-                    used_cols[lx] = true;
+                    used_rows |= (1 << ly);
+                    used_cols |= (1 << lx);
                 }
-                row_counts[ly]++;
-                col_counts[lx]++;
-                array_push(all_occupied_cells, [sx, sy, lx, ly]); // Track star position
+                array_push(all_occupied_cells, [sx, sy, lx, ly]);
+                ds_map_add(sector_occupied_map, string(lx) + "," + string(ly), true);
+                array_push(sector_occupied, [lx, ly]);
 
-                // Reserve neighbors and track them
                 for (var dx = -1; dx <= 1; dx++) {
                     for (var dy = -1; dy <= 1; dy++) {
                         var nx = lx + dx;
                         var ny = ly + dy;
-                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
-                            if (!has_coord(reserved_cells, nx, ny)) {
-                                array_push(reserved_cells, [nx, ny]);
-                            }
+                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8 && !has_coord(reserved_cells, nx, ny)) {
+                            array_push(reserved_cells, [nx, ny]);
                             remove_coord(s.available_cells, nx, ny);
                         }
                     }
                 }
-                array_delete(s.available_cells, candidate_index, 1);
+                array_delete(s.available_cells, index, 1); // Use index for star
                 tries = 0;
             }
 
-            // Build sector_occupied from all_occupied_cells
-            var sector_occupied = [];
-            for (var i = 0; i < array_length(all_occupied_cells); i++) {
-                if (all_occupied_cells[i][0] == sx && all_occupied_cells[i][1] == sy) {
-                    array_push(sector_occupied, [all_occupied_cells[i][2], all_occupied_cells[i][3]]);
-                }
-            }
-
-            // Restore reserved cells, excluding all occupied positions
             s = restore_reserved_cells(s, reserved_cells, sector_occupied);
             global.galaxy[sx][sy] = s;
+            ds_map_destroy(sector_occupied_map);
         }
     }
 }
 
-
-/// @description: Places player and restores reserved cells
+/// @description: Places player with at least 3 neighboring available cells
+/// @param {array} all_occupied_cells - Reference array to track placed positions
 function place_player(all_occupied_cells) {
-    var sectors = [];
+    // Cache valid sectors
+    var valid_sectors = [];
     for (var sx = 0; sx < 8; sx++) {
         for (var sy = 0; sy < 8; sy++) {
-            if (array_length(global.galaxy[sx][sy].available_cells) > 0) {
-                array_push(sectors, [sx, sy]);
+            var s = global.galaxy[sx][sy];
+            if (array_length(s.available_cells) > 0) {
+                array_push(valid_sectors, [sx, sy]);
             }
         }
     }
+    valid_sectors = array_shuffle(valid_sectors);
 
-    sectors = array_shuffle(sectors);
+    // Cache all_occupied_cells as ds_map for faster checks
+    var occupied_map = create_coord_map(all_occupied_cells, true);
 
-    for (var attempt = 0; attempt < array_length(sectors); attempt++) {
-        var sx = sectors[attempt][0];
-        var sy = sectors[attempt][1];
+    // Limit attempts
+    var max_attempts = array_length(valid_sectors) * 2;
+    var attempts = 0;
+
+    for (var i = 0; i < array_length(valid_sectors) && attempts < max_attempts; i++) {
+        attempts++;
+        var sx = valid_sectors[i][0];
+        var sy = valid_sectors[i][1];
         var sector = global.galaxy[sx][sy];
 
-        sector.available_cells = array_shuffle(sector.available_cells);
+        // Create ds_map for available_cells
+        var available_map = create_coord_map(sector.available_cells);
 
-        var reserved_cells = [];
-        for (var i = 0; i < array_length(sector.available_cells); i++) {
-            var lx = sector.available_cells[i][0];
-            var ly = sector.available_cells[i][1];
-
+        // Precompute valid cells with 3 neighbors
+        var valid_cells = [];
+        for (var j = 0; j < array_length(sector.available_cells); j++) {
+            var lx = sector.available_cells[j][0];
+            var ly = sector.available_cells[j][1];
             if (has_clearance(sector.available_cells, lx, ly, 3)) {
-                global.ent.sx = sx;
-                global.ent.sy = sy;
-                global.ent.lx = lx;
-                global.ent.ly = ly;
-                sector.seen = true;
-
-                // Reserve neighbors and track them
-                for (var dx = -1; dx <= 1; dx++) {
-                    for (var dy = -1; dy <= 1; dy++) {
-                        var nx = lx + dx;
-                        var ny = ly + dy;
-                        if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
-                            if (!has_coord(reserved_cells, nx, ny)) {
-                                array_push(reserved_cells, [nx, ny]);
-                            }
-                            remove_coord(sector.available_cells, nx, ny);
-                        }
-                    }
-                }
-
-                // Add player cell back
-                if (!has_coord(sector.available_cells, lx, ly)) {
-                    array_push(sector.available_cells, [lx, ly]);
-                }
-
-                // Restore reserved cells, excluding occupied ones
-                var sector_occupied = [];
-                for (var j = 0; j < array_length(all_occupied_cells); j++) {
-                    if (all_occupied_cells[j][0] == sx && all_occupied_cells[j][1] == sy) {
-                        array_push(sector_occupied, [all_occupied_cells[j][2], all_occupied_cells[j][3]]);
-                    }
-                }
-                sector = restore_reserved_cells(sector, reserved_cells, sector_occupied);
-
-                global.galaxy[sx][sy] = sector;
-
-                show_debug_message("Player placed at sector [" + string(sx) + "," + string(sy) + "] cell [" + string(lx) + "," + string(ly) + "]");
-                return;
+                array_push(valid_cells, [lx, ly]);
             }
         }
+        ds_map_destroy(available_map);
+
+        if (array_length(valid_cells) == 0) continue;
+
+        // Pick random valid cell
+        var cell = valid_cells[irandom(array_length(valid_cells) - 1)];
+        var lx = cell[0];
+        var ly = cell[1];
+
+        // Place player
+        global.ent.sx = sx;
+        global.ent.sy = sy;
+        global.ent.lx = lx;
+        global.ent.ly = ly;
+        sector.seen = true;
+
+        // Reserve neighbors
+        var reserved_cells = [];
+        for (var dx = -1; dx <= 1; dx++) {
+            for (var dy = -1; dy <= 1; dy++) {
+                var nx = lx + dx;
+                var ny = ly + dy;
+                if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8 && !has_coord_map(occupied_map, nx, ny, sx, sy)) {
+                    if (!has_coord(reserved_cells, nx, ny)) {
+                        array_push(reserved_cells, [nx, ny]);
+                    }
+                    remove_coord(sector.available_cells, nx, ny);
+                }
+            }
+        }
+
+        // Add player cell back if needed
+        if (!has_coord(sector.available_cells, lx, ly)) {
+            array_push(sector.available_cells, [lx, ly]);
+        }
+
+        // Restore reserved cells
+        var sector_occupied = [];
+        for (var j = 0; j < array_length(all_occupied_cells); j++) {
+            if (all_occupied_cells[j][0] == sx && all_occupied_cells[j][1] == sy) {
+                array_push(sector_occupied, [all_occupied_cells[j][2], all_occupied_cells[j][3]]);
+            }
+        }
+        sector = restore_reserved_cells(sector, reserved_cells, sector_occupied);
+
+        global.galaxy[sx][sy] = sector;
+        ds_map_destroy(occupied_map);
+
+        show_debug_message("Player placed at sector [" + string(sx) + "," + string(sy) + "] cell [" + string(lx) + "," + string(ly) + "]");
+        return;
     }
 
+    ds_map_destroy(occupied_map);
     show_debug_message("Failed to place player with proper clearance.");
 }
 
@@ -434,6 +490,27 @@ function has_clearance(cell_array, lx, ly, required) {
     return false;
 }
 
+/// @description: Creates a ds_map from cell_array for fast coordinate lookups
+function create_coord_map(cell_array, use_sector=false) {
+    var coord_map = ds_map_create();
+    for (var i = 0; i < array_length(cell_array); i++) {
+        var key = use_sector ? 
+            string(cell_array[i][0]) + "," + string(cell_array[i][1]) + ":" + 
+            string(cell_array[i][2]) + "," + string(cell_array[i][3]) :
+            string(cell_array[i][0]) + "," + string(cell_array[i][1]);
+        ds_map_add(coord_map, key, true);
+    }
+    return coord_map;
+}
+
+/// @description: Checks if coordinate exists in ds_map
+function has_coord_map(coord_map, lx, ly, sx=undefined, sy=undefined) {
+    var key = (sx == undefined || sy == undefined) ? 
+        string(lx) + "," + string(ly) :
+        string(sx) + "," + string(sy) + ":" + string(lx) + "," + string(ly);
+    return ds_map_exists(coord_map, key);
+}
+
 /// @description: Returns true if `cell_array` contains the coordinate (lx, ly) in sector (sx, sy).
 function has_coord(cell_array, lx, ly, sx=undefined, sy=undefined) {
     for (var i = 0; i < array_length(cell_array); i++) {
@@ -464,44 +541,36 @@ function remove_coord(cell_array, lx, ly) {
 
 /// @description: Ensures no occupied cells are in available_cells
 function validate_available_cells(all_occupied_cells) {
+    if (!debug_mode) return; // Skip in release builds
+    var occupied_map = create_coord_map(all_occupied_cells, true);
     for (var sx = 0; sx < 8; sx++) {
         for (var sy = 0; sy < 8; sy++) {
             var s = global.galaxy[sx][sy];
             for (var i = 0; i < array_length(s.available_cells); i++) {
                 var lx = s.available_cells[i][0];
                 var ly = s.available_cells[i][1];
-                if (has_coord(all_occupied_cells, lx, ly, sx, sy)) {
+                if (has_coord_map(occupied_map, lx, ly, sx, sy)) {
                     show_debug_message("Error: Occupied cell [" + string(lx) + "," + string(ly) + "] in sector [" + string(sx) + "," + string(sy) + "] is in available_cells.");
                 }
             }
         }
     }
-}
-
-/// @description: Removes the cell and all its neighbors from `cell_array`.
-function reserve_neighbors(cell_array, lx, ly) {
-    for (var dx = -1; dx <= 1; dx++) {
-        for (var dy = -1; dy <= 1; dy++) {
-            var nx = lx + dx;
-            var ny = ly + dy;
-            if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
-                remove_coord(cell_array, nx, ny);
-            }
-        }
-    }
+    ds_map_destroy(occupied_map);
 }
 
 /// @description: Restores reserved cells to available_cells, excluding occupied cells
 function restore_reserved_cells(sector, reserved_cells, occupied_cells) {
+    var occupied_map = create_coord_map(occupied_cells);
+    var available_map = create_coord_map(sector.available_cells);
     for (var i = 0; i < array_length(reserved_cells); i++) {
-        var cell = reserved_cells[i];
-        var lx = cell[0];
-        var ly = cell[1];
-        if (!has_coord(occupied_cells, lx, ly) && // Not occupied by anything
-            !has_coord(sector.available_cells, lx, ly)) { // Not already in available_cells
+        var lx = reserved_cells[i][0];
+        var ly = reserved_cells[i][1];
+        if (!has_coord_map(occupied_map, lx, ly) && !has_coord_map(available_map, lx, ly)) {
             array_push(sector.available_cells, [lx, ly]);
         }
     }
+    ds_map_destroy(occupied_map);
+    ds_map_destroy(available_map);
     return sector;
 }
 
@@ -520,9 +589,4 @@ function clear_galaxy() {
             }
         }
     }
-}
-
-/// @description: Convert cells to string key
-function cell_to_str(cx, cy) {
-	return string(cx) + "," + string(cy);
 }

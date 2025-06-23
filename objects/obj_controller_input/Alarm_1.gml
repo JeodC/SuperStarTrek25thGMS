@@ -10,7 +10,7 @@ switch (menu_id) {
 		global.inputmode.mode = InputMode.None;
 		global.game.state = State.Movie;
 		cleanup_buttons();
-		draw_clear_alpha(c_black, 1);
+		draw_clear(c_black);
 		if (!instance_exists(obj_controller_movies)) {
 			instance_create_layer(0, 0, "Overlay", obj_controller_movies);
 		}
