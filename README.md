@@ -2,6 +2,10 @@
 
 ## GAME MAKER STUDIO PORT
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/2669d4e5-73b5-48c4-97c9-590a13fbe707" alt="Screenshot" />
+</p>
+
 This game is a free open source port of [Super Star Trek Meets 25th Anniversary](https://emabolo.itch.io/super-star-trek-25th) by Emabolo.
 
 Originally designed with Adventure Game Studio, this Game Maker Studio conversion aims to be both true to the original and open for modularity.
