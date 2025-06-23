@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"mus_bridge_ambient",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":191.88463,
+  "name":"mus_bridge_ambient",
+  "parent":{
+    "name":"mus",
+    "path":"folders/Sounds/mus.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"mus_bridge_ambient.ogg",
+  "type":0,
+  "volume":1.0,
+}

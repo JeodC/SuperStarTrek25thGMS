@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"snd_ui_click",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":0.28800455,
+  "name":"snd_ui_click",
+  "parent":{
+    "name":"sfx",
+    "path":"folders/Sounds/sfx.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_ui_click.ogg",
+  "type":0,
+  "volume":1.0,
+}

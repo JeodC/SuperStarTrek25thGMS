@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"mus_title",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":15.9822,
+  "name":"mus_title",
+  "parent":{
+    "name":"mus",
+    "path":"folders/Sounds/mus.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"mus_title.ogg",
+  "type":0,
+  "volume":1.0,
+}

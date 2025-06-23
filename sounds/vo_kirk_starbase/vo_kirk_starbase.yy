@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"vo_kirk_starbase",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":3.4041498,
+  "name":"vo_kirk_starbase",
+  "parent":{
+    "name":"kirk",
+    "path":"folders/Sounds/voice/kirk.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"vo_kirk_starbase.ogg",
+  "type":0,
+  "volume":1.0,
+}

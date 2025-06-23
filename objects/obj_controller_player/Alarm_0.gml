@@ -1,0 +1,1 @@
+save_game("sst25th.dat");

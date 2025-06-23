@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"vo_spock_onscreen",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":1.3467574,
+  "name":"vo_spock_onscreen",
+  "parent":{
+    "name":"spock",
+    "path":"folders/Sounds/voice/spock.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"vo_spock_onscreen.ogg",
+  "type":0,
+  "volume":1.0,
+}

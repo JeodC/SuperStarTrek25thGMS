@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"mus_warp",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":3.9466667,
+  "name":"mus_warp",
+  "parent":{
+    "name":"mus",
+    "path":"folders/Sounds/mus.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"mus_warp.ogg",
+  "type":0,
+  "volume":1.0,
+}

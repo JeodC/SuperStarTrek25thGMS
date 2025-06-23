@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"vo_uhura_enemy_spotted",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":64,
+  "compression":0,
+  "conversionMode":0,
+  "duration":3.108186,
+  "name":"vo_uhura_enemy_spotted",
+  "parent":{
+    "name":"uhura",
+    "path":"folders/Sounds/voice/uhura.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"vo_uhura_enemy_spotted.ogg",
+  "type":0,
+  "volume":1.0,
+}
