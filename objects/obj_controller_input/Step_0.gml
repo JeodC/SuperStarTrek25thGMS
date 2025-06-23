@@ -1,6 +1,11 @@
 // @obj_controller_input_Step
 /// @description: Handles inputs based on mode
 
+if (mouse_x != last_mx || mouse_y != last_my) {
+	global.input.mx = mouse_x;
+	global.input.my = mouse_y;
+}
+
 // Update input states
 check_input();
 
@@ -22,7 +27,7 @@ switch (global.inputmode.mode) {
 		handle_ui_input();
 		break;
 	case InputMode.Bridge:
-		handle_bridge_input(global.input.mx, global.input.my);
+		handle_bridge_input();
 		break;
 	case InputMode.Warp:
 		global.busy = true;
@@ -45,30 +50,18 @@ switch (global.inputmode.mode) {
 
 /// @description: Updates global.input based on input sources
 function check_input() {
-	
-	// Clear action
-	action = -1;
-	
-    // Update mouse position
-	global.input.programmatic_move = false;
-    var old_mx = global.input.mx;
-    var old_my = global.input.my;
-
-	// Update mouse position only for mouse input source
-    if (global.input.source == InputSource.Mouse) {
-        global.input.mx = mouse_x;
-        global.input.my = mouse_y;
-    }
+    action = -1;
+    var old_source = global.input.source;
 
     // Update input source
-    get_input_source(old_mx, old_my);
+    get_input_source();
 
     // Skip button input if on cooldown
     if (delay > 0) {
         reset_input();
         return;
     }
-	
+    
     // Assign input flags
     assign_input();
 
@@ -76,6 +69,22 @@ function check_input() {
     if (input_any() && !(global.input.confirm && obj_controller_dialog.show_text)) {
         delay = 10;
         alarm[0] = 10;
+    }
+}
+
+/// @description: Updates global.input.source
+function get_input_source() {
+    if (keyboard_check_pressed(vk_anykey)) {
+        global.input.source = InputSource.Keyboard;
+    } else if (mouse_check_button_pressed(mb_any)) {
+        global.input.source = InputSource.Mouse;
+    } else if (gamepad_is_connected(0)) {
+        for (var i = 0; i < array_length(gp_buttons); i++) {
+            if (gamepad_button_check_pressed(0, gp_buttons[i])) {
+                global.input.source = InputSource.Gamepad;
+                break;
+            }
+        }
     }
 }
 
@@ -132,10 +141,7 @@ function handle_ui_input() {
 }
 
 /// @description: Handles Bridge input
-/// @param {real} mx: Mouse x position
-/// @param {real} my: Mouse y position
-function handle_bridge_input(mx, my) {
-	
+function handle_bridge_input() {
     var min_state = all_regions[0].state;
     var max_state = all_regions[array_length(all_regions) - 1].state;
     var sector;
@@ -146,7 +152,7 @@ function handle_bridge_input(mx, my) {
         && array_length(global.galaxy[global.ent.sx]) > global.ent.sy) {
         sector = global.galaxy[global.ent.sx][global.ent.sy];
     }
-	
+    
     // Help/Report screens
     if (instance_exists(obj_controller_player) && obj_controller_player.display != Reports.Default) {
         global.busy = true;
@@ -155,7 +161,6 @@ function handle_bridge_input(mx, my) {
             obj_controller_player.data = [];
             global.busy = false;
             hover_state = HoverState.None;
-            // Consume inputs to prevent double triggers
             global.input.confirm = false;
             global.input.cancel = false;
             global.input.up = false;
@@ -163,6 +168,9 @@ function handle_bridge_input(mx, my) {
             global.input.left = false;
             global.input.right = false;
             global.input.pressed = false;
+            // Reset virtual cursor to default position
+            global.input.mx = 0;
+            global.input.my = 0;
         }
         return;
     }
@@ -171,52 +179,30 @@ function handle_bridge_input(mx, my) {
     if (!global.busy) {
         var prev_hover_state = hover_state;
 
-        // Keyboard / Gamepad navigation
+        // Keyboard/Gamepad navigation
         if (global.input.left || global.input.right) {
             var dir = global.input.left ? -1 : 1;
             var next_state = hover_state;
-
+            if (global.input.source != InputSource.Mouse) {
+                global.input.source = (global.input.source == InputSource.Keyboard) ? InputSource.Keyboard : InputSource.Gamepad;
+            }
             repeat (max_state - min_state + 1) {
                 next_state += dir;
                 if (next_state > max_state) next_state = min_state;
                 else if (next_state < min_state) next_state = max_state;
-
                 if (hover_state_is_valid(next_state)) {
                     hover_state = next_state;
+                    // Update virtual cursor position
+                    update_virtual_cursor(hover_state);
                     break;
                 }
             }
         }
 
-        // Update mouse position programmatically if using gamepad/keyboard
-        if ((global.input.left || global.input.right) &&
-            (global.input.source == InputSource.Keyboard || global.input.source == InputSource.Gamepad)) {
-            var matched_region = undefined;
-            for (var i = 0; i < array_length(all_regions); i++) {
-                var r = all_regions[i];
-                if (r.state == hover_state) {
-                    matched_region = r;
-                    break;
-                }
-            }
-
-            if (!is_undefined(matched_region)) {
-                var center_x = (matched_region.x1 + matched_region.x2) / 2;
-                var center_y = (matched_region.y1 + matched_region.y2) / 2;
-
-                global.input.mx = center_x;
-                global.input.my = center_y;
-
-                var window_x = center_x * (window_get_width() / 320);
-                var window_y = center_y * (window_get_height() / 200);
-
-                global.input.programmatic_move = true;
-                window_mouse_set(window_x, window_y);
-            }
-        }
-
-        // Mouse-based hover detection (only if mouse is inside the window)
-        if (global.input.source == InputSource.Mouse && mouse_in_window()) {
+        // Mouse input: Select hover_state based on click
+        if (global.input.source == InputSource.Mouse && global.input.confirm) {
+            var mx = device_mouse_x_to_gui(0);
+            var my = device_mouse_y_to_gui(0);
             var new_hover = HoverState.None;
             for (var i = 0; i < array_length(all_regions); i++) {
                 var r = all_regions[i];
@@ -225,7 +211,11 @@ function handle_bridge_input(mx, my) {
                     break;
                 }
             }
-            hover_state = new_hover;
+            if (new_hover != HoverState.None) {
+                hover_state = new_hover;
+                // Update virtual cursor position
+                update_virtual_cursor(hover_state);
+            }
         }
 
         // Confirm action
@@ -240,28 +230,67 @@ function handle_bridge_input(mx, my) {
         check_shortcuts();
     }
 
-    // Restore hover after action queue clears (non-mouse input)
-    if (!global.busy && array_length(global.queue) == 0 && !is_undefined(last_state) && global.input.source != InputSource.Mouse) {
-        hover_state = last_state;
-
-        for (var i = 0; i < array_length(all_regions); i++) {
-            var r = all_regions[i];
-            if (r.state == hover_state) {
-                var center_x = (r.x1 + r.x2) / 2;
-                var center_y = (r.y1 + r.y2) / 2;
-
-                global.input.mx = center_x;
-                global.input.my = center_y;
-
-                var window_x = center_x * (window_get_width() / 320);
-                var window_y = center_y * (window_get_height() / 200);
-                window_mouse_set(window_x, window_y);
-                break;
-            }
+    // Restore hover after action queue clears
+    if (!global.busy && array_length(global.queue) == 0 && !is_undefined(last_state)) {
+        if (hover_state_is_valid(last_state)) {
+            hover_state = last_state;
+            update_virtual_cursor(hover_state);
+            show_debug_message("Restored Hover: " + string([global.input.mx, global.input.my]) +
+                               ", HoverState: " + string(hover_state) +
+                               ", Source: " + string(global.input.source));
+        } else {
+            show_debug_message("Invalid Last State: " + string(last_state));
         }
-
         last_state = undefined;
     }
+}
+
+/// @description: Updates virtual cursor position based on hover_state
+function update_virtual_cursor(state) {
+    var matched_region = undefined;
+    for (var i = 0; i < array_length(all_regions); i++) {
+        var r = all_regions[i];
+        if (r.state == state) {
+            matched_region = r;
+            break;
+        }
+    }
+    if (!is_undefined(matched_region)) {
+        global.input.mx = (matched_region.x1 + matched_region.x2) / 2;
+        global.input.my = (matched_region.y1 + matched_region.y2) / 2;
+        show_debug_message("Virtual Cursor Set: " + string([global.input.mx, global.input.my]) +
+                           ", HoverState: " + string(state));
+    } else {
+        global.input.mx = 0;
+        global.input.my = 0;
+        hover_state = HoverState.None;
+        show_debug_message("No Region for State: " + string(state));
+    }
+}
+
+/// @description: Resets input struct to default
+function reset_input() {
+    global.input = {
+        source: global.input.source,
+        confirm: false,
+        cancel: false,
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+        mx: global.input.mx, // Preserve virtual cursor
+        my: global.input.my,
+        programmatic_move: false
+    };
+}
+
+/// @description: Check if a selected hotspot is valid
+function hover_state_is_valid(state) {
+    for (var i = 0; i < array_length(all_regions); i++) {
+        if (all_regions[i].state == state) return true;
+    }
+    show_debug_message("Invalid State: " + string(state) + ", Regions: " + string(array_length(all_regions)));
+    return false;
 }
 
 /// @description: Handles executing a hover action
@@ -414,55 +443,55 @@ function handle_hover_action(action) {
 
 /// @description: Handles input for warp navigation mode
 function handle_warp_input() {
-	
-    // Mouse cursor movement
+    var map_offset_x = 40;
+    var map_offset_y = 14;
+    var size_cell_x = 30;
+    var size_cell_y = 22;
+
+    // Mouse input
     if (global.input.source == InputSource.Mouse) {
-        var map_offset_x = 40;
-        var map_offset_y = 14;
-        var size_cell_x = 30;
-        var size_cell_y = 22;
-
-        var mx = global.input.mx - map_offset_x;
-        var my = global.input.my - map_offset_y;
-        var grid_x = floor(mx / size_cell_x);
-        var grid_y = floor(my / size_cell_y);
-
-        if (mx >= 0 && mx < size_cell_x * global.inputmode.max_x &&
-            my >= 0 && my < size_cell_y * global.inputmode.max_y) {
-            if (grid_x >= 0 && grid_x < global.inputmode.max_x &&
-                grid_y >= 0 && grid_y < global.inputmode.max_y) {
-                global.inputmode.cursor_x = grid_x;
-                global.inputmode.cursor_y = grid_y;
+        var mx = device_mouse_x_to_gui(0);
+        var my = device_mouse_y_to_gui(0);
+        global.input.mx = mx;
+        global.input.my = my;
+        if (mx >= 0 && mx < display_get_gui_width() && my >= 0 && my < display_get_gui_height()) {
+            mx -= map_offset_x;
+            my -= map_offset_y;
+            var grid_x = floor(mx / size_cell_x);
+            var grid_y = floor(my / size_cell_y);
+            if (mx >= 0 && mx < size_cell_x * global.inputmode.max_x &&
+                my >= 0 && my < size_cell_y * global.inputmode.max_y) {
+                if (grid_x >= 0 && grid_x < global.inputmode.max_x &&
+                    grid_y >= 0 && grid_y < global.inputmode.max_y) {
+                    global.inputmode.cursor_x = grid_x;
+                    global.inputmode.cursor_y = grid_y;
+                    global.input.mx = map_offset_x + (grid_x + 0.5) * size_cell_x;
+                    global.input.my = map_offset_y + (grid_y + 0.5) * size_cell_y;
+                }
             }
         }
     }
 
     // Keyboard/gamepad directional input
-    if (global.input.source != InputSource.Mouse || !mouse_check_button_pressed(mb_any)) {
-		if (global.input.left) {
-		    global.inputmode.cursor_x--;
-		    if (global.inputmode.cursor_x < 0) {
-		        global.inputmode.cursor_x = global.inputmode.max_x - 1;
-		    }
-		}
-		if (global.input.right) {
-		    global.inputmode.cursor_x++;
-		    if (global.inputmode.cursor_x >= global.inputmode.max_x) {
-		        global.inputmode.cursor_x = 0;
-		    }
-		}
-		if (global.input.up) {
-		    global.inputmode.cursor_y--;
-		    if (global.inputmode.cursor_y < 0) {
-		        global.inputmode.cursor_y = global.inputmode.max_y - 1;
-		    }
-		}
-		if (global.input.down) {
-		    global.inputmode.cursor_y++;
-		    if (global.inputmode.cursor_y >= global.inputmode.max_y) {
-		        global.inputmode.cursor_y = 0;
-		    }
-		}
+    if (global.input.left) {
+        global.inputmode.cursor_x--;
+        if (global.inputmode.cursor_x < 0) global.inputmode.cursor_x = global.inputmode.max_x - 1;
+        update_warp_cursor();
+    }
+    if (global.input.right) {
+        global.inputmode.cursor_x++;
+        if (global.inputmode.cursor_x >= global.inputmode.max_x) global.inputmode.cursor_x = 0;
+        update_warp_cursor();
+    }
+    if (global.input.up) {
+        global.inputmode.cursor_y--;
+        if (global.inputmode.cursor_y < 0) global.inputmode.cursor_y = global.inputmode.max_y - 1;
+        update_warp_cursor();
+    }
+    if (global.input.down) {
+        global.inputmode.cursor_y++;
+        if (global.inputmode.cursor_y >= global.inputmode.max_y) global.inputmode.cursor_y = 0;
+        update_warp_cursor();
     }
 
     // Cancel input
@@ -470,6 +499,8 @@ function handle_warp_input() {
         global.inputmode.type = undefined;
         obj_controller_player.display = Reports.Default;
         global.inputmode.mode = InputMode.Bridge;
+        global.input.mx = 0;
+        global.input.my = 0;
         return;
     }
 
@@ -477,209 +508,272 @@ function handle_warp_input() {
     if (global.input.confirm && !obj_controller_dialog.show_text) {
         var tx = global.inputmode.cursor_x;
         var ty = global.inputmode.cursor_y;
-
         var result = action_warp(tx, ty);
         global.inputmode.type = undefined;
-
-        if (is_bool(result)) {
-            if (result) {
-                change_sector(tx, ty);
-            }
+        if (is_bool(result) && result) {
+            change_sector(tx, ty);
         }
     }
 }
 
-/// @description: Handles input for impulse movement mode
+/// @description: Updates the cursor on the warp map
+function update_warp_cursor() {
+    var map_offset_x = 40;
+    var map_offset_y = 14;
+    var size_cell_x = 30;
+    var size_cell_y = 22;
+    global.input.mx = map_offset_x + (global.inputmode.cursor_x + 0.5) * size_cell_x;
+    global.input.my = map_offset_y + (global.inputmode.cursor_y + 0.5) * size_cell_y;
+}
+
+/// @description: Handle impulse input
 function handle_impulse_input() {
     var sector = global.galaxy[global.ent.sx][global.ent.sy];
-    
-    // Process mouse cursor movement if source is Mouse
+    var map_offset_x = 121;
+    var map_offset_y = 31;
+    var size_cell_x = 10;
+    var size_cell_y = 9;
+
+    // Mouse input
     if (global.input.source == InputSource.Mouse && !global.ent.animating_impulse) {
-        // Map mouse coordinates to grid cell
-        var map_offset_x = 121;
-        var map_offset_y = 31;
-        var size_cell_x = 10;
-        var size_cell_y = 9;
-        var mx = global.input.mx - map_offset_x;
-        var my = global.input.my - map_offset_y;
-        var grid_x = floor(mx / size_cell_x);
-        var grid_y = floor(my / size_cell_y);
-        
-        // Check if mouse is within grid bounds
-        if (mx >= 0 && mx < size_cell_x * global.inputmode.max_x &&
-            my >= 0 && my < size_cell_y * global.inputmode.max_y) {
-            // Validate grid coordinates and move cursor if valid
-            if (grid_x >= 0 && grid_x < global.inputmode.max_x && 
-                grid_y >= 0 && grid_y < global.inputmode.max_y) {
-                global.inputmode.cursor_x = grid_x;
-                global.inputmode.cursor_y = grid_y;
+        var mx = device_mouse_x_to_gui(0);
+        var my = device_mouse_y_to_gui(0);
+        global.input.mx = mx;
+        global.input.my = my;
+        if (mx >= 0 && mx < display_get_gui_width() && my >= 0 && my < display_get_gui_height()) {
+            mx -= map_offset_x;
+            my -= map_offset_y;
+            var grid_x = floor(mx / size_cell_x);
+            var grid_y = floor(my / size_cell_y);
+            if (mx >= 0 && mx < size_cell_x * global.inputmode.max_x &&
+                my >= 0 && my < size_cell_y * global.inputmode.max_y) {
+                if (grid_x >= 0 && grid_x < global.inputmode.max_x &&
+                    grid_y >= 0 && grid_y < global.inputmode.max_y) {
+                    global.inputmode.cursor_x = grid_x;
+                    global.inputmode.cursor_y = grid_y;
+                    global.input.mx = map_offset_x + (grid_x + 0.5) * size_cell_x;
+                    global.input.my = map_offset_y + (grid_y + 0.5) * size_cell_y;
+                }
             }
         }
-	}
+    }
 
-    // Process keyboard and gamepad
-    if (global.input.source != InputSource.Mouse || !mouse_check_button_pressed(mb_any)) {
-        if (global.input.left)  global.inputmode.cursor_x = max(0, global.inputmode.cursor_x - 1);
-        if (global.input.right) global.inputmode.cursor_x = min(global.inputmode.max_x - 1, global.inputmode.cursor_x + 1);
-        if (global.input.up)    global.inputmode.cursor_y = max(0, global.inputmode.cursor_y - 1);
-        if (global.input.down)  global.inputmode.cursor_y = min(global.inputmode.max_y - 1, global.inputmode.cursor_y + 1);
+    // Keyboard/gamepad
+    if (global.input.left) {
+        global.inputmode.cursor_x = max(0, global.inputmode.cursor_x - 1);
+        update_impulse_cursor();
+    }
+    if (global.input.right) {
+        global.inputmode.cursor_x = min(global.inputmode.max_x - 1, global.inputmode.cursor_x + 1);
+        update_impulse_cursor();
+    }
+    if (global.input.up) {
+        global.inputmode.cursor_y = max(0, global.inputmode.cursor_y - 1);
+        update_impulse_cursor();
+    }
+    if (global.input.down) {
+        global.inputmode.cursor_y = min(global.inputmode.max_y - 1, global.inputmode.cursor_y + 1);
+        update_impulse_cursor();
     }
 
     // Confirm or cancel
     if (global.input.confirm && !obj_controller_dialog.show_text) global.inputmode.type = "confirm";
     else if (global.input.cancel) global.inputmode.type = "cancel";
 
-    // Process impulse action if player hasn't started moving
-	if (!global.ent.animating_impulse) {
-	    var result = action_impulse();
+    // Process impulse action
+    if (!global.ent.animating_impulse) {
+        var result = action_impulse();
+        if (is_bool(result)) {
+            global.inputmode.type = undefined;
+            if (!result) {
+                obj_controller_player.display = Reports.Default;
+                global.inputmode.mode = InputMode.Bridge;
+                global.input.mx = 0;
+                global.input.my = 0;
+            }
+        }
+    }
 
-	    if (is_bool(result)) {
-	        global.inputmode.type = undefined;
-
-	        if (!result) {
-	            // Cancel or invalid move — revert
-	            obj_controller_player.display = Reports.Default;
-	            global.inputmode.mode = InputMode.Bridge;
-	        }
-	    }
-	}
-    
     // Handle impulse animation
     if (global.ent.animating_impulse) {
         var done = global.ent.update_impulse_animation();
         if (done) {
-			// If player contacted starbase and landed next to it initiate docking
-			if (obj_controller_player.contactedbase && check_baseloc(global.ent.lx, global.ent.ly)) {
-				action_stardock();
-			}
-			else {
-	            obj_controller_player.display = Reports.Default;
-	            global.inputmode.mode = InputMode.Bridge;
-			}
+            if (obj_controller_player.contactedbase && check_baseloc(global.ent.lx, global.ent.ly)) {
+                action_stardock();
+            } else {
+                obj_controller_player.display = Reports.Default;
+                global.inputmode.mode = InputMode.Bridge;
+                global.input.mx = 0;
+                global.input.my = 0;
+            }
         }
     }
 }
 
-/// @description: Handles input for torpedo firing
+/// @description: Updates the cursor on the impulse map
+function update_impulse_cursor() {
+    var map_offset_x = 121;
+    var map_offset_y = 31;
+    var size_cell_x = 10;
+    var size_cell_y = 9;
+    global.input.mx = map_offset_x + (global.inputmode.cursor_x + 0.5) * size_cell_x;
+    global.input.my = map_offset_y + (global.inputmode.cursor_y + 0.5) * size_cell_y;
+}
+
+/// @description: Handle torpedo input
 function handle_torpedo_input() {
-	
-	// Only one torpedo allowed
-	if (instance_exists(obj_torpedo)) {
-		global.busy = true;
-		return;
-	}
-	
-    var radius = 5; // in grid units
+    if (instance_exists(obj_torpedo)) {
+        global.busy = true;
+        return;
+    }
+    var radius = 5;
+    var map_offset_x = 121;
+    var map_offset_y = 31;
+    var size_cell_x = 10;
+    var size_cell_y = 9;
 
-	// Update angle using keyboard
-	if (global.input.source != InputSource.Mouse) {
-	    if (global.input.right) {
-	        obj_controller_player.torp_angle = (obj_controller_player.torp_angle - 10 + 360) mod 360;
-	    } else if (global.input.left) {
-	        obj_controller_player.torp_angle = (obj_controller_player.torp_angle + 10) mod 360;
-	    }
-	}
+    // Mouse input
+    if (global.input.source == InputSource.Mouse) {
+        var mx = device_mouse_x_to_gui(0);
+        var my = device_mouse_y_to_gui(0);
+        if (mx >= 0 && mx < display_get_gui_width() && my >= 0 && my < display_get_gui_height()) {
+            // Calculate angle from player position to mouse
+            var px = global.ent.lx;
+            var py = global.ent.ly;
+            var screen_px = map_offset_x + (px + 0.5) * size_cell_x;
+            var screen_py = map_offset_y + (py + 0.5) * size_cell_y;
+            obj_controller_player.torp_angle = point_direction(screen_px, screen_py, mx, my);
+            global.input.mx = mx;
+            global.input.my = my;
+            show_debug_message("Mouse Torpedo Cursor: " + string([global.input.mx, global.input.my]) +
+                               ", Angle: " + string(obj_controller_player.torp_angle));
+        }
+    }
 
-	// Override angle if mouse moved
-	if (global.input.source == InputSource.Mouse) {
-	    var px = global.ent.lx;
-	    var py = global.ent.ly;
+    // Keyboard/Gamepad angle adjustment
+    if (global.input.source != InputSource.Mouse) {
+        if (global.input.right) {
+            obj_controller_player.torp_angle = (obj_controller_player.torp_angle - 10 + 360) mod 360;
+        } else if (global.input.left) {
+            obj_controller_player.torp_angle = (obj_controller_player.torp_angle + 10) mod 360;
+        }
+    }
 
-	    var screen_px = map_offset_x + px * size_cell_x + size_cell_x * 0.5;
-	    var screen_py = map_offset_y + py * size_cell_y + size_cell_y * 0.5;
-
-	    var dx = device_mouse_x_to_gui(0) - screen_px;
-	    var dy = device_mouse_y_to_gui(0) - screen_py;
-
-	    obj_controller_player.torp_angle = point_direction(0, 0, dx, dy);
-	}
-
-    // Calculate target position relative to player using the angle
+    // Calculate target position
     var px = global.ent.lx;
     var py = global.ent.ly;
-
     var target_x = px + lengthdir_x(radius, obj_controller_player.torp_angle);
     var target_y = py + lengthdir_y(radius, obj_controller_player.torp_angle);
-
-    // Round target position to nearest grid cell
     target_x = round(target_x);
     target_y = round(target_y);
-
-    // Clamp target position to 8x8 sector grid (0 to 7)
     target_x = clamp(target_x, 0, 7);
     target_y = clamp(target_y, 0, 7);
 
-    // Update cursor position for display or targeting UI
+    // Update virtual cursor (snap to grid for consistency)
     global.inputmode.cursor_x = target_x;
     global.inputmode.cursor_y = target_y;
+    if (global.input.source != InputSource.Mouse) {
+        global.input.mx = map_offset_x + (target_x + 0.5) * size_cell_x;
+        global.input.my = map_offset_y + (target_y + 0.5) * size_cell_y;
+    }
 
-    // Confirm fire or cancel input
+    // Confirm or cancel
     if (global.input.confirm) {
         global.inputmode.type = "confirm";
     } else if (global.input.cancel) {
         global.inputmode.type = "cancel";
     }
 
-    // On confirm, fire torpedo
+    // Fire torpedo
     if (global.inputmode.type == "confirm") {
-		global.ent.torpedoes -= 1;
+        global.ent.torpedoes -= 1;
         action_torpedo(global.inputmode.cursor_x, global.inputmode.cursor_y);
-    }
-	
-    // On cancel, exit without firing
-    else if (global.inputmode.type == "cancel") {
+    } else if (global.inputmode.type == "cancel") {
         global.inputmode.type = undefined;
-		obj_controller_player.display = Reports.Default;
+        obj_controller_player.display = Reports.Default;
         global.inputmode.mode = InputMode.Bridge;
+        global.input.mx = 0;
+        global.input.my = 0;
     }
 }
 
-
-/// @description: Handles input for shield/phasers power management
+/// @description: Handle manage input
 function handle_manage_input() {
     if (obj_controller_dialog.show_text) return;
-
     var type = global.inputmode.type;
     var max_level = global.ent.energy;
     var increment = 50;
-
-    // Button base positions
     var bx = 264;
     var by = 58;
     var by_up = by - 10;
     var by_down = by + 10;
     var by_confirm = by + 28;
-
-    // Dimensions
     var btn_w = sprite_get_width(spr_btn_arrow);
     var btn_h = sprite_get_height(spr_btn_arrow);
     var confirm_w = sprite_get_width(spr_btn_confirm);
     var confirm_h = sprite_get_height(spr_btn_confirm);
 
-    // Mouse
-    var mx = device_mouse_x_to_gui(0);
-    var my = device_mouse_y_to_gui(0);
-    var is_mouse = (global.input.source == InputSource.Mouse);
-    var confirm = global.input.confirm;
+    // Mouse input
+    if (global.input.source == InputSource.Mouse) {
+        var mx = device_mouse_x_to_gui(0);
+        var my = device_mouse_y_to_gui(0);
+        global.input.mx = mx;
+        global.input.my = my;
+        if (mx >= 0 && mx < display_get_gui_width() && my >= 0 && my < display_get_gui_height()) {
+            var in_up = point_in_rectangle(mx, my, bx - btn_w / 2, by_up - btn_h / 2, bx + btn_w / 2, by_up + btn_h / 2);
+            var in_down = point_in_rectangle(mx, my, bx - btn_w / 2, by_down - btn_h / 2, bx + btn_w / 2, by_down + btn_h / 2);
+            var in_confirm = point_in_rectangle(mx, my, bx - confirm_w / 2, by_confirm - confirm_h / 2, bx + confirm_w / 2, by_confirm + confirm_h / 2);
+            
+            // Optional: Snap cursor to button center on hover for visual feedback
+            if (in_up) {
+                global.input.mx = bx;
+                global.input.my = by_up;
+            } else if (in_down) {
+                global.input.mx = bx;
+                global.input.my = by_down;
+            } else if (in_confirm) {
+                global.input.mx = bx;
+                global.input.my = by_confirm;
+            }
+            
+            show_debug_message("Mouse Manage Cursor: " + string([global.input.mx, global.input.my]) +
+                               ", Hover: Up=" + string(in_up) + ", Down=" + string(in_down) + ", Confirm=" + string(in_confirm));
+            
+            // Handle click actions
+            if (global.input.confirm) {
+                if (in_up) {
+                    global.inputmode.tmp_new = min(global.inputmode.tmp_new + increment, max_level);
+                    global.input.mx = bx;
+                    global.input.my = by_up;
+                } else if (in_down) {
+                    global.inputmode.tmp_new = max(global.inputmode.tmp_new - increment, 0);
+                    global.input.mx = bx;
+                    global.input.my = by_down;
+                } else if (in_confirm) {
+                    action_apply_change(type, global.inputmode.tmp_new);
+                    reset_inputmode();
+                    global.input.confirm = false;
+                    global.input.mx = 0;
+                    global.input.my = 0;
+                }
+            }
+        }
+    }
 
-    // Button areas
-    var in_up = point_in_rectangle(mx, my, bx - btn_w / 2, by_up - btn_h / 2, bx + btn_w / 2, by_up + btn_h / 2);
-    var in_down = point_in_rectangle(mx, my, bx - btn_w / 2, by_down - btn_h / 2, bx + btn_w / 2, by_down + btn_h / 2);
-    var in_confirm = point_in_rectangle(mx, my, bx - confirm_w / 2, by_confirm - confirm_h / 2, bx + confirm_w / 2, by_confirm + confirm_h / 2);
-
-	// Input
-    if (global.input.up || (confirm && in_up)) {
+    // Keyboard/Gamepad input
+    if (global.input.up) {
         global.inputmode.tmp_new = min(global.inputmode.tmp_new + increment, max_level);
-    }
-    else if (global.input.down || (confirm && in_down)) {
+        global.input.mx = bx;
+        global.input.my = by_up;
+    } else if (global.input.down) {
         global.inputmode.tmp_new = max(global.inputmode.tmp_new - increment, 0);
-    }
-    else if ((confirm && !is_mouse) || (confirm && in_confirm)) {
+        global.input.mx = bx;
+        global.input.my = by_down;
+    } else if (global.input.confirm) {
         action_apply_change(type, global.inputmode.tmp_new);
         reset_inputmode();
         global.input.confirm = false;
-    }
-    else if (global.input.cancel) {
+    } else if (global.input.cancel) {
         global.queue[array_length(global.queue)] = dialog_cancel(type);
         reset_inputmode();
         global.input.cancel = false;
@@ -693,51 +787,6 @@ function reset_inputmode() {
     global.inputmode.tmp_new = 0;
     global.inputmode.type = undefined;
     global.busy = true;
-}
-
-/// @description: Resets the input struct to default
-function reset_input() {
-	global.input = {
-		source: global.input.source,
-		confirm: false,
-		cancel: false,
-		up: false,
-		down: false,
-		left: false,
-		right: false,
-		mx: mouse_x,
-		my: mouse_y,
-		programmatic_move: global.input.programmatic_move,
-	};
-}
-
-/// @description: Updates global.input.source
-/// @param {real} old_mx: Old mouse x
-/// @param {real} old_my: Old mouse y
-function get_input_source(old_mx, old_my) {
-    if (keyboard_check_pressed(vk_anykey)) {
-        global.input.source = InputSource.Keyboard;
-        global.input.programmatic_move = false; // Reset flag on keyboard input
-    } else if (!global.input.programmatic_move && mouse_in_window() &&
-               (mouse_check_button_pressed(mb_any) ||
-                (mouse_x != old_mx || mouse_y != old_my))) {
-        global.input.source = InputSource.Mouse;
-        global.input.programmatic_move = false; // Reset flag on actual mouse input
-    } else if (gamepad_is_connected(0)) {
-        for (var i = 0; i < array_length(gp_buttons); i++) {
-            if (gamepad_button_check_pressed(0, gp_buttons[i])) {
-                global.input.source = InputSource.Gamepad;
-                global.input.programmatic_move = false; // Reset flag on gamepad input
-                break;
-            }
-        }
-    }
-}
-
-/// @description: Returns true if the mouse is within the window (room) bounds
-function mouse_in_window() {
-    return mouse_x >= 0 && mouse_x < room_width &&
-           mouse_y >= 0 && mouse_y < room_height;
 }
 
 /// @description: Assigns input based on source
@@ -798,13 +847,4 @@ function button_listener(buttons) {
 		global.selected_index = 0;
 	    global.input.confirm = false;
 	}
-}
-
-/// @desciption: Check if a selected hotspot is valid
-/// @param {any} state: The enum HoverState to check
-function hover_state_is_valid(state) {
-    for (var i = 0; i < array_length(all_regions); i++) {
-        if (all_regions[i].state == state) return true;
-    }
-    return false;
 }

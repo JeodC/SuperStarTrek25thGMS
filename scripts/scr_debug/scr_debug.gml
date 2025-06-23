@@ -39,9 +39,21 @@ function debug_handle_keys() {
     }
 	// Toggle win
 	else if (keyboard_check_pressed(vk_numpad2)) {
-		global.busy = true;
         global.game.totalenemies = 0;
-        dialog_condition();
+        global.busy = true;
+        array_resize(global.queue, global.index);
+        array_push(global.queue, function() {
+            return immediate_dialog("Uhura", "condition.win1");
+        });
+        array_push(global.queue, function() {
+            return immediate_dialog("Kirk", "condition.win2", vo_kirk_onscreen);
+        });
+        array_push(global.queue, function() {
+            global.ent.condition = Condition.Win;
+            global.busy = true;
+            winlose();
+            return undefined;
+        });
     }
 	// Damage random systems
 	else if (keyboard_check_pressed(vk_numpad3)) {

@@ -89,7 +89,6 @@ function action_impulse() {
 				}
             } else {
                 queue_dialog("None", "engines.impulse.invalid");
-				show_debug_message("No valid path found.");
                 return false;
             }
 		} else {

@@ -1,4 +1,4 @@
-if (room == rm_endgame && global.game.state == State.Credits) {
+if (room == rm_endgame && global.game.state == State.Credits && credits_initialized) {
     draw_credits();
 }
 

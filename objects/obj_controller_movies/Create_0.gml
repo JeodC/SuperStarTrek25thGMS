@@ -1,4 +1,7 @@
 credits_initialized = false;
+credits_lines = []; // Reset array
+credits_index = 1; // Start at 1
+ctimer = 0; // Add first line immediately
 tx = 160;                 // Center x position
 credits_speed = 0.3;      // Scroll speed (pixels per frame)
 next_credit_y = room_height + 50;

@@ -74,8 +74,11 @@ if (sprite_index == spr_anim_destroyed && image_index >= image_number - 1) {
 }
 
 // -- Credits logic
-if (room == rm_endgame && global.game.state == State.Credits) {
+if (room == rm_endgame && global.game.state == State.Credits && !credits_initialized) {
     update_movie_animation();
+}
+else if (room == rm_endgame && sprite_index == spr_anim_warp && credits_initialized) {
+	image_index = 106;
 }
 
 // --- Helper: End Movie
@@ -99,14 +102,23 @@ function reset_player_state() {
     }
 }
 
+if (credits_initialized) {
+	add_credit_line();
+	add_stats_lines();
+	check_credits_finished();
+	handle_credits_input();
+	scroll_credits();
+	check_stats_settled();
+}
+
 /// @description Initialize credits (music and variables)
 function init_credits() {
-    if (!audio_is_playing(mus_title) && !audio_is_playing(mus_credits) && !credits_initialized) {
+    if (!credits_initialized) {
         audio_play_sound(mus_credits, 0, false);
-        credits_initialized = true;
         credits_lines = []; // Reset array
         credits_index = 1; // Start at 1
         ctimer = 0; // Add first line immediately
+		credits_initialized = true;
     }
 }
 
@@ -116,25 +128,10 @@ function update_movie_animation() {
         sprite_index = spr_anim_warp;
         image_index = 0;
         image_speed = 0.5;
-    } else if (sprite_index == spr_anim_warp && image_index >= image_number - 1) {
+    } else if (sprite_index == spr_anim_warp && image_index > 106) {
         image_index = 106;
 		init_credits();
-	    add_credit_line();
-	    add_stats_lines();
-	    check_credits_finished();
-	    handle_credits_input();
-	    scroll_credits();
-	    check_stats_settled();
     }
-	else {
-		init_credits();
-	    add_credit_line();
-	    add_stats_lines();
-	    check_credits_finished();
-	    handle_credits_input();
-	    scroll_credits();
-	    check_stats_settled();
-	}
 }
 
 /// @description Add a new credit line with dynamic timer and spacing
