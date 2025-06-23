@@ -266,33 +266,34 @@ function queue_next_enemy_attack(i, post) {
 function player_phaser_attack() {
     global.busy = true;
 
-    // Copy enemies at the time of the attack start
+	// Copy enemies at the time of the attack start
 	var len = array_length(obj_controller_player.local_enemies);
 	obj_controller_player.attack_targets = array_create(len, undefined);
 
 	// Copy from source into destination
 	array_copy(obj_controller_player.attack_targets, 0, obj_controller_player.local_enemies, 0, len);
-    obj_controller_player.attack_index = 0;
+	obj_controller_player.attack_index = 0;
 
-    obj_controller_player.attack_buffer = [];
+	obj_controller_player.attack_buffer = [];
+	obj_controller_player.destroyed_count = 0;
 
-    // Calculate phaser allotment per enemy
-    var total_targets = array_length(obj_controller_player.attack_targets);
-    var total_phasers = global.ent.phasers;
-    var per_enemy_phasers = round(total_phasers / total_targets);
+	// Calculate phaser allotment per enemy
+	var total_targets = array_length(obj_controller_player.attack_targets);
+	var total_phasers = global.ent.phasers;
+	var per_enemy_phasers = round(total_phasers / total_targets);
 
-    global.ent.phasers -= per_enemy_phasers * total_targets;
-    global.ent.phasers = max(0, global.ent.phasers);
+	global.ent.phasers -= per_enemy_phasers * total_targets;
+	global.ent.phasers = max(0, global.ent.phasers);
 
-    obj_controller_player.attack_phasers = per_enemy_phasers;
-    obj_controller_player.attack_difficulty = global.game.difficulty;
+	obj_controller_player.attack_phasers = per_enemy_phasers;
+	obj_controller_player.attack_difficulty = global.game.difficulty;
 
-    show_debug_message("[STARTING PLAYER ATTACK SEQUENCE]");
-    show_debug_message("Player allotted " + string(total_phasers) + " energy to phasers.");
-    show_debug_message("Calculated " + string(per_enemy_phasers) + " phasers per enemy.");
+	show_debug_message("[STARTING PLAYER ATTACK SEQUENCE]");
+	show_debug_message("Player allotted " + string(total_phasers) + " energy to phasers.");
+	show_debug_message("Calculated " + string(per_enemy_phasers) + " phasers per enemy.");
 
-    // Start first attack
-    queue_next_attack(0);
+	// Start first attack
+	queue_next_attack(0);
 }
 
 /// @description: Recursive function to queue a player phaser attack for an enemy
@@ -303,6 +304,7 @@ function queue_next_attack(i) {
 	// Check if we're finished with the sequence
     if (i >= array_length(targets)) {
 		obj_controller_player._data = undefined;
+		obj_controller_player.destroyed_count = 0;
         array_push(global.queue, function() {
             show_debug_message("[PLAYER ATTACK SEQUENCE RESOLVED]");
             if (array_length(obj_controller_player.local_enemies) > 0) {
@@ -313,90 +315,122 @@ function queue_next_attack(i) {
     }
 
 	// Capture the enemy to target
-    var e = targets[i];
+	var e = targets[i];
 
-    // Check if still valid
-    if (!is_struct(e) || is_undefined(global.allenemies[e.index]) || global.allenemies[e.index].energy <= 0) {
-        // Skip and try next
-        queue_next_attack(i + 1);
-        return;
-    }
+	// Check if still valid
+	if (!is_struct(e) || is_undefined(global.allenemies[e.index]) || global.allenemies[e.index].energy <= 0) {
+		show_debug_message("Warning: Skipping invalid enemy at index " + string(e.index));
+		queue_next_attack(i + 1);
+		return;
+	}
 
-    // Calculate attack details
-    var px = global.ent.lx;
-    var py = global.ent.ly;
-    var dx = abs(px - e.lx);
-    var dy = abs(py - e.ly);
-    var distance = max(sqrt(dx * dx + dy * dy), 1);
-    var modifier = min(2.5 + random(1.0), 3.5);
-    var damage = ceil(obj_controller_player.attack_phasers * modifier / distance);
-    var current_energy = global.allenemies[e.index].energy;
+	// Calculate attack details
+	var px = global.ent.lx;
+	var py = global.ent.ly;
+	var dx = abs(px - e.lx);
+	var dy = abs(py - e.ly);
+	var distance = max(sqrt(dx * dx + dy * dy), 1);
+	var modifier = min(2.5 + random(1.0), 3.5);
+	var damage = ceil(obj_controller_player.attack_phasers * modifier / distance);
+	var current_energy = global.allenemies[e.index].energy;
 
 	// Capture data for queue closure
-    obj_controller_player._data = {
-        px: px, py: py,
-        lx: e.lx, ly: e.ly,
-        idx: e.index,
-        difficulty: obj_controller_player.attack_difficulty,
-        damage: damage,
-        energy: current_energy,
+	obj_controller_player._data = {
+		px: px, py: py,
+		lx: e.lx, ly: e.ly,
+		idx: e.index,
+		difficulty: obj_controller_player.attack_difficulty,
+		damage: damage,
+		energy: current_energy,
 		i: i
-    };
+	};
 
-    obj_controller_player.attack_buffer[i] = obj_controller_player._data;
+	obj_controller_player.attack_buffer[i] = obj_controller_player._data;
 
-    // Visual effect
-    array_push(global.queue, function() {
-        audio_play_sound(snd_player_phaser, 0, false);
-        var p = instance_create_layer(0, 0, "Overlay", obj_phaser);
+	// Visual effect
+	array_push(global.queue, function() {
+		audio_play_sound(snd_player_phaser, 0, false);
+		var p = instance_create_layer(0, 0, "Overlay", obj_phaser);
 		var px = obj_controller_player._data.px, py = obj_controller_player._data.py;
 		var lx = obj_controller_player._data.lx, ly = obj_controller_player._data.ly;
-        p.x1 = px; p.y1 = py;
-        p.x2 = lx; p.y2 = ly;
-        p.type = 1;
-        p.duration = 40;
-        return { delay: 40 };
-    });
+		p.x1 = px; p.y1 = py;
+		p.x2 = lx; p.y2 = ly;
+		p.type = 1;
+		p.duration = 40;
+		return { delay: 40 };
+	});
 
-    // Damage and dialog
-    array_push(global.queue, function() {
+	// Damage and dialog
+	array_push(global.queue, function() {
 		var current_energy = obj_controller_player._data.energy;
 		var damage = obj_controller_player._data.damage;
 		var px = obj_controller_player._data.px, py = obj_controller_player._data.py;
 		var lx = obj_controller_player._data.lx, ly = obj_controller_player._data.ly;
 		var idx = obj_controller_player._data.idx;
-        var new_energy = max(current_energy - damage, 0);
-        global.allenemies[idx].energy = new_energy;
 
-        show_debug_message("Firing on enemy index " + string(idx) + " at [" + string(lx) + "," + string(ly) + "].");
-        show_debug_message("Calculated " + string(damage) + " damage. Enemy energy now " + string(new_energy) + " down from " + string(current_energy) + ".");
+		// Validate enemy index
+		if (idx >= array_length(global.allenemies) || !is_struct(global.allenemies[idx])) {
+			show_debug_message("Warning: Enemy index " + string(idx) + " invalid during damage phase!");
+			return [];
+		}
 
-        if (damage < current_energy / 7) {
-            return immediate_dialog("Chekov", "phasers.noeffect");
+		// Adjust index using destroyed_count
+		var new_idx = idx - obj_controller_player.destroyed_count;
+
+		// Verify coordinates match
+		if (new_idx < array_length(global.allenemies) && is_struct(global.allenemies[new_idx]) &&
+			global.allenemies[new_idx].lx == lx && global.allenemies[new_idx].ly == ly) {
+		} else {
+			new_idx = -1;
+			for (var k = 0; k < array_length(global.allenemies); k++) {
+				if (is_struct(global.allenemies[k]) && global.allenemies[k].lx == lx && 
+					global.allenemies[k].ly == ly && global.allenemies[k].sx == global.ent.sx && 
+					global.allenemies[k].sy == global.ent.sy) {
+					new_idx = k;
+					break;
+				}
+			}
+			if (new_idx == -1) {
+				show_debug_message("Error: No enemy found at [" + string(lx) + "," + string(ly) + "]!");
+				return [];
+			}
         }
 
-        var sulu = immediate_dialog("Sulu", "weapons.enemyhit", noone, {
-            hp: damage,
-            coord: string(lx + 1) + "," + string(ly + 1)
-        });
+		// Apply damage
+		var new_energy = max(current_energy - damage, 0);
+		global.allenemies[new_idx].energy = new_energy;
 
-        if (new_energy > 90) {
-            return [sulu[0], immediate_dialog("Spock", "weapons.energyleft", noone, { energy: round(new_energy) })[0]];
-        } else if (new_energy <= 0) {
-            var result = destroy_enemy(idx);
-            if (is_array(result)) return [sulu[0], result[0]];
-            return [sulu[0]];
+		show_debug_message("Firing on enemy index " + string(new_idx) + " at [" + string(lx) + "," + string(ly) + "].");
+		show_debug_message("Calculated " + string(damage) + " damage. Enemy energy now " + string(new_energy) + " down from " + string(current_energy) + ".");
+
+		// Dialog
+		if (damage < current_energy / 7) {
+			return immediate_dialog("Chekov", "phasers.noeffect");
+		}
+
+		var sulu = immediate_dialog("Sulu", "weapons.enemyhit", noone, {
+			hp: damage,
+			coord: string(lx + 1) + "," + string(ly + 1)
+		});
+
+		if (new_energy > 90) {
+			return [sulu[0], immediate_dialog("Spock", "weapons.energyleft", noone, { energy: round(new_energy) })[0]];
+		} else if (new_energy <= 0) {
+			obj_controller_player.destroyed_count += 1; // Increment counter
+			var result = destroy_enemy(new_idx);
+			if (is_array(result)) return [sulu[0], result[0]];
+			return [sulu[0]];
         }
 
-        return [sulu[0]];
-    });
+		return [sulu[0]];
+	});
 
-    // Next attack
-    array_push(global.queue, function() {
+	// Next attack
+	array_push(global.queue, function() {
 		var i = obj_controller_player._data.i;
 		obj_controller_player._data = undefined;
-        queue_next_attack(i + 1);
-    });
+		queue_next_attack(i + 1);
+	});
 }
 
 /// @description: Removes an enemy from the galaxy, creates explosion effect, and queues dialog
