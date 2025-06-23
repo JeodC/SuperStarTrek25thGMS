@@ -94,14 +94,13 @@ function draw_torpedo_reticle() {
     draw_set_color(global.t_colors.blue);
     
     // Draw inner dot if within sector grid boundaries
-    if (dx1 >= grid_min_x && dx1 < grid_max_x && dy1 >= grid_min_y && dy1 < grid_max_y) {
-        draw_point(floor(dx1), floor(dy1));
-    }
-    
-    // Draw outer dot if within sector grid boundaries
-    if (dx2 >= grid_min_x && dx2 < grid_max_x && dy2 >= grid_min_y && dy2 < grid_max_y) {
-        draw_point(floor(dx2), floor(dy2));
-    }
+	if (dx1 >= grid_min_x && dx1 < grid_max_x && dy1 >= grid_min_y && dy1 < grid_max_y) {
+	    draw_circle(dx1, dy1, 1, false);
+	}
+
+	if (dx2 >= grid_min_x && dx2 < grid_max_x && dy2 >= grid_min_y && dy2 < grid_max_y) {
+	    draw_circle(dx2, dy2, 1, false);
+	}
 
     // Convert angle (0–360) to range 1.0–8.9
     var n = (angle mod 360) / 360 * 8.0 + 1.0;
