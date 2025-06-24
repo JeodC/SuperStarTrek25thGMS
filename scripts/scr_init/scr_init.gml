@@ -9,7 +9,7 @@ function scr_init() {
     global.selected_index = -1;
 	
 	// Options
-	global.ini = "sst25th.ini"
+	global.ini = "sst25th.ini";
 	global.audio_mode = 0;
 	global.difficulty = 1;
     global.lang = "en";
@@ -17,8 +17,8 @@ function scr_init() {
 	
 	// Init
 	init_scale(4);
-	load_options();
 	init_languages();
+	load_options();
 	init_game();
 }
 

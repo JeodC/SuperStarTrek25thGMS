@@ -45,7 +45,8 @@ function reorder_languages() {
 
 /// @description: Loads game options from ini specified in global.ini
 function load_options() {
-    if (ini_open(string(global.ini))) {
+	if file_exists(global.ini) {
+		ini_open(global.ini);
 		global.audio_mode = ini_read_real("Game", "audio_mode", 0);
 		global.difficulty = ini_read_real("Game", "difficulty", 0);
 		var saved_lang = ini_read_string("Game", "lang", "en");
@@ -57,19 +58,23 @@ function load_options() {
 		ini_close();
 		show_debug_message("Options loaded from " + global.ini);
 	} else {
-        show_debug_message("Warning: " + global.ini + " not found, using defaults");
+		show_debug_message("Warning: " + string(global.ini) + " not found, using defaults");
 		init_options();
-    }
+	}
 }
 
 /// @description: Saves game options to ini specified in global.ini
 function save_options() {
-    if (ini_open(global.ini)) {
+	if file_exists(global.ini) {
+		ini_open(global.ini);
 		ini_write_real("Game", "audio_mode", global.audio_mode);
 		ini_write_real("Game", "difficulty", global.difficulty);
 		ini_write_string("Game", "lang", global.lang);
 		ini_close();
 		show_debug_message("Options saved to " + global.ini);
+	}
+	else {
+		show_debug_message("Unable to save options to " + string(global.ini) + "!");
 	}
 }
 
@@ -208,7 +213,6 @@ function setup_menu_button(button, menu_id) {
         default:
             button.text = lang_get(menu_id); break;
     }
-    show_debug_message("Button setup: " + menu_id + ", text=" + button.text);
 }
 
 /// @description: Updates text for all option buttons

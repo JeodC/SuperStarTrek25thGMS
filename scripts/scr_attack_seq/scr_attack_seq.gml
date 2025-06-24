@@ -264,18 +264,23 @@ function queue_next_enemy_attack(i, post) {
 
 /// @description: Begins the player's phaser attack sequence
 function player_phaser_attack() {
-    global.busy = true;
+	global.busy = true;
+	var player = instance_find(obj_controller_player, 0);
+	player._data = undefined;
+	player.attack_targets = [];
+	player.attack_buffer = [];
+	player.destroyed_count = 0;
 
 	// Copy enemies at the time of the attack start
-	var len = array_length(obj_controller_player.local_enemies);
-	obj_controller_player.attack_targets = array_create(len, undefined);
+	var len = array_length(player.local_enemies);
+	player.attack_targets = array_create(len, undefined);
 
 	// Copy from source into destination
-	array_copy(obj_controller_player.attack_targets, 0, obj_controller_player.local_enemies, 0, len);
-	obj_controller_player.attack_index = 0;
+	array_copy(player.attack_targets, 0, player.local_enemies, 0, len);
+	player.attack_index = 0;
 
-	obj_controller_player.attack_buffer = [];
-	obj_controller_player.destroyed_count = 0;
+	player.attack_buffer = [];
+	player.destroyed_count = 0;
 
 	// Calculate phaser allotment per enemy
 	var total_targets = array_length(obj_controller_player.attack_targets);
@@ -285,8 +290,8 @@ function player_phaser_attack() {
 	global.ent.phasers -= per_enemy_phasers * total_targets;
 	global.ent.phasers = max(0, global.ent.phasers);
 
-	obj_controller_player.attack_phasers = per_enemy_phasers;
-	obj_controller_player.attack_difficulty = global.game.difficulty;
+	player.attack_phasers = per_enemy_phasers;
+	player.attack_difficulty = global.game.difficulty;
 
 	show_debug_message("[STARTING PLAYER ATTACK SEQUENCE]");
 	show_debug_message("Player allotted " + string(total_phasers) + " energy to phasers.");
