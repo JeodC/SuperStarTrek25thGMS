@@ -2,10 +2,10 @@
 function init_enterprise() {
 	audio_play_sound(snd_starbase_refill, 0, false);
 	if (global.ent.generaldamage > 1) {
-		queue_dialog("Kirk", "docked.fixed1");
-		queue_dialog("Scott", "docked.fixed2");
-		queue_dialog("Kirk", "docked.fixed3");
-		queue_dialog("Scott", "docked.fixed4");
+		queue_dialog(Speaker.Kirk, "docked.fixed1");
+		queue_dialog(Speaker.Scott, "docked.fixed2");
+		queue_dialog(Speaker.Kirk, "docked.fixed3");
+		queue_dialog(Speaker.Scott, "docked.fixed4");
 	}
 	// Reset ship properties
 	global.ent.energy = global.game.maxenergy;

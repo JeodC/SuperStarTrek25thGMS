@@ -131,7 +131,7 @@ function queue_next_enemy_attack(i, post) {
 	    var idx = obj_controller_player.attack_indexes[global.index];
 	    var data = obj_controller_player.attack_buffer[idx];
 	    // Add 1 to lx and ly for user display
-	    return immediate_dialog("Sulu", "battle.enemyfiring", noone, {
+	    return immediate_dialog(Speaker.Sulu, "battle.enemyfiring", noone, {
 	        coord: string(data.lx + 1) + "," + string(data.ly + 1)
 	    });
 	});
@@ -176,7 +176,7 @@ function queue_next_enemy_attack(i, post) {
         var keys = variable_struct_get_names(global.ent.system);
         
         if (data.damage < 1) {
-            return immediate_dialog("Sulu", "battle.evade");
+            return immediate_dialog(Speaker.Sulu, "battle.evade");
         }
         
 		// Player loses shields
@@ -205,7 +205,7 @@ function queue_next_enemy_attack(i, post) {
             global.busy = true;
             array_resize(global.queue, global.index);
             array_push(global.queue, function() {
-                return [immediate_dialog("Spock", "redalert.shieldsdown")[0]];
+                return [immediate_dialog(Speaker.Spock, "redalert.shieldsdown")[0]];
             });
             array_push(global.queue, function() {
                 dialog_condition();
@@ -217,24 +217,24 @@ function queue_next_enemy_attack(i, post) {
 		// Various reaction dialogs
         var spock_dialog = [];
         if (obj_controller_player.speech_phaserhit) {
-            spock_dialog = [immediate_dialog("Spock", "battle.enthit2", noone, { energy: round(data.damage) })[0]];
+            spock_dialog = [immediate_dialog(Speaker.Spock, "battle.enthit2", noone, { energy: round(data.damage) })[0]];
         } else {
-            spock_dialog = [immediate_dialog("Spock", "battle.enthit1", vo_spock_phaser_hit)[0]];
+            spock_dialog = [immediate_dialog(Speaker.Spock, "battle.enthit1", vo_spock_phaser_hit)[0]];
         }
         obj_controller_player.speech_phaserhit = !obj_controller_player.speech_phaserhit;
         
         var shield_dialog = [];
         if (global.ent.shields > 200 && global.ent.generaldamage < 1) {
-            shield_dialog = [immediate_dialog("Scott", "battle.shields1")[0]];
+            shield_dialog = [immediate_dialog(Speaker.Scott, "battle.shields1")[0]];
         } else if (global.ent.shields < 10) {
-            shield_dialog = [immediate_dialog("Spock", "redalert.shieldsdown")[0]];
+            shield_dialog = [immediate_dialog(Speaker.Spock, "redalert.shieldsdown")[0]];
         } else {
-            shield_dialog = [immediate_dialog("Spock", "battle.shields2", noone, { shields: global.ent.shields })[0]];
+            shield_dialog = [immediate_dialog(Speaker.Spock, "battle.shields2", noone, { shields: global.ent.shields })[0]];
         }
         
         var gendmg_dialog = [];
         if (global.ent.generaldamage > 2) {
-            gendmg_dialog = [immediate_dialog("Scott", "gendmg.major")[0]];
+            gendmg_dialog = [immediate_dialog(Speaker.Scott, "gendmg.major")[0]];
         } else if (global.ent.generaldamage > 0 && !obj_controller_player.speech_damage) {
             gendmg_dialog = [
                 immediate_dialog("Uhura", "gendmg.minor")[0],
@@ -410,16 +410,16 @@ function queue_next_attack(i) {
 
 		// Dialog
 		if (damage < current_energy / 7) {
-			return immediate_dialog("Chekov", "phasers.noeffect");
+			return immediate_dialog(Speaker.Chekov, "phasers.noeffect");
 		}
 
-		var sulu = immediate_dialog("Sulu", "weapons.enemyhit", noone, {
+		var sulu = immediate_dialog(Speaker.Sulu, "weapons.enemyhit", noone, {
 			hp: damage,
 			coord: string(lx + 1) + "," + string(ly + 1)
 		});
 
 		if (new_energy > 90) {
-			return [sulu[0], immediate_dialog("Spock", "weapons.energyleft", noone, { energy: round(new_energy) })[0]];
+			return [sulu[0], immediate_dialog(Speaker.Spock, "weapons.energyleft", noone, { energy: round(new_energy) })[0]];
 		} else if (new_energy <= 0) {
 			obj_controller_player.destroyed_count += 1; // Increment counter
 			var result = destroy_enemy(new_idx);
@@ -500,7 +500,7 @@ function destroy_enemy(idx) {
         array_push(global.queue, function() {
             return { delay: 60 };
         });
-        queue_dialog("Spock", "weapons.lastone", vo_spock_noships);
+        queue_dialog(Speaker.Spock, "weapons.lastone", vo_spock_noships);
     }
     
     // Check if player won
@@ -511,7 +511,7 @@ function destroy_enemy(idx) {
             return immediate_dialog("Uhura", "condition.win1");
         });
         array_push(global.queue, function() {
-            return immediate_dialog("Kirk", "condition.win2", vo_kirk_onscreen);
+            return immediate_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
         });
         array_push(global.queue, function() {
             global.ent.condition = Condition.Win;

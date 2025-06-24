@@ -46,7 +46,7 @@ function debug_handle_keys() {
             return immediate_dialog("Uhura", "condition.win1");
         });
         array_push(global.queue, function() {
-            return immediate_dialog("Kirk", "condition.win2", vo_kirk_onscreen);
+            return immediate_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
         });
         array_push(global.queue, function() {
             global.ent.condition = Condition.Win;

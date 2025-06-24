@@ -6,22 +6,22 @@ var spacing = 8;
 
 // Only draw text if we have text available to draw and the audio mode allows it
 if (show_text && text_index < array_length(text_handle) && global.audio_mode != 1) {
-    var line = text_handle[text_index];
+	var line = text_handle[text_index];
 
-    if (is_struct(line) && variable_struct_exists(line, "speaker") && variable_struct_exists(line, "line")) {
-        var speaker_name = line.speaker;
-        var text = string(line.line);
+	if (is_struct(line) && variable_struct_exists(line, "speaker") && variable_struct_exists(line, "line")) {
+		var speaker_id = line.speaker;
+		var text = string(line.line);
 
-        var speaker_data;
-        if (variable_struct_exists(speakers, speaker_name)) {
-            speaker_data = variable_struct_get(speakers, speaker_name);
-        } else {
-            speaker_data = { x: 32, y: 32, color: c_white };
-        }
+		var speaker_data;
+		if (is_array(speakers) && speaker_id >= 0 && speaker_id < array_length(speakers)) {
+			speaker_data = speakers[speaker_id];
+		} else {
+			speaker_data = { x: 32, y: 32, color: c_white };
+		}
 
-        var tx = speaker_data.x;
-        var ty = speaker_data.y;
-        var color = speaker_data.color;
+		var tx = speaker_data.x;
+		var ty = speaker_data.y;
+		var color = speaker_data.color;
 
         // Prevent text from going offscreen horizontally
         var margin = 10;

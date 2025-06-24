@@ -361,9 +361,9 @@ function handle_hover_action(action) {
 			global.inputmode.cursor_x = global.ent.sx;
 			global.inputmode.cursor_y = global.ent.sy;
 	        if (global.ent.system.warp < 10) {
-	            queue_dialog("Spock", "engines.warp.damaged");
+	            queue_dialog(Speaker.Spock, "engines.warp.damaged");
 	        } else if (sector.enemynum > 0) {
-	            queue_dialog("Sulu", "engines.warn1");
+	            queue_dialog(Speaker.Sulu, "engines.warn1");
 				// Pull up the warp map anyway
 				global.queue[array_length(global.queue)] = function() {
 					obj_controller_player.display = Reports.Warp; // Stop drawing the current sector and draw the galaxy map

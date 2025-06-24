@@ -29,7 +29,7 @@ for (var i = 0; i < array_length(objects); i++) {
     if (is_struct(obj) && obj.lx == grid_x && obj.ly == grid_y) {
         switch (obj.type) {
             case "base":
-                queue_dialog("Chekov", "torpedo.hitbase");
+                queue_dialog(Speaker.Chekov, "torpedo.hitbase");
                 destroy_reason = "hit base at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
                 break;
             case "enemy":
@@ -38,7 +38,7 @@ for (var i = 0; i < array_length(objects); i++) {
                 destroy_reason = "hit enemy at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
                 break;
             case "star":
-                queue_dialog("Chekov", "torpedo.hitstar");
+                queue_dialog(Speaker.Chekov, "torpedo.hitstar");
                 destroy_reason = "hit star at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
                 break;
         }
@@ -49,7 +49,7 @@ for (var i = 0; i < array_length(objects); i++) {
 // Check conditions for destruction
 //   "torpedo.missed": "Captain, spread missed, sir.",
 if (grid_x < 0 || grid_x > 7 || grid_y < 0 || grid_y > 7) {
-	queue_dialog("Chekov", "torpedo.missed");
+	queue_dialog(Speaker.Chekov, "torpedo.missed");
     destroy_reason = "left the sector.";
 }
 

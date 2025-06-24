@@ -16,7 +16,7 @@ function action_warp(sx, sy) {
 
 	// Too far to warp
 	if (distance > max_speed) {
-		queue_dialog("Scott", "move.toofar");
+		queue_dialog(Speaker.Scott, "move.toofar");
 		return false;
 	}
 
@@ -28,14 +28,14 @@ function action_warp(sx, sy) {
 			var needed = ceil(energy_required) - global.ent.energy;
 			global.ent.shields -= needed;
 			global.ent.energy += needed;
-			queue_dialog("Scott", "move.divert");
+			queue_dialog(Speaker.Scott, "move.divert");
 			// Deduct energy for warp
 			global.ent.energy -= ceil(energy_required);
 			global.ent.isdocked = false;
 			show_debug_message("Warp to sector " + string(sx) + "," + string(sy) + " using " + string(ceil(energy_required)) + " units of energy.");
 			return true;
 		} else {
-			queue_dialog("Scott", "move.noenergy");
+			queue_dialog(Speaker.Scott, "move.noenergy");
 			return false;
 		}
 	}
@@ -88,11 +88,11 @@ function action_impulse() {
 					return true;
 				}
             } else {
-                queue_dialog("None", "engines.impulse.invalid");
+                queue_dialog(Speaker.None, "engines.impulse.invalid");
                 return false;
             }
 		} else {
-			queue_dialog("None", "engines.impulse.invalid");
+			queue_dialog(Speaker.None, "engines.impulse.invalid");
 			 return false
         }
     }
@@ -149,19 +149,19 @@ function action_apply_change(type, value) {
         
             if (shield_change > 0) {
                 if (global.ent.energy < shield_change) {
-					return queue_dialog("Scott", "shields.notchanged");
+					return queue_dialog(Speaker.Scott, "shields.notchanged");
                 }
                 global.ent.energy -= shield_change;
                 var shield_value = new_shields;
-				queue_dialog("Scott", "shields.raised", undefined, { energy: shield_value });
+				queue_dialog(Speaker.Scott, "shields.raised", undefined, { energy: shield_value });
             } else if (shield_change < 0) {
                 global.ent.energy -= shield_change;
                 if (global.ent.energy > global.game.maxenergy) {
                     global.ent.energy = global.game.maxenergy;
                 }
-                queue_dialog("Scott", "shields.lowered");
+                queue_dialog(Speaker.Scott, "shields.lowered");
             } else {
-                queue_dialog("Scott", "shields.notchanged");
+                queue_dialog(Speaker.Scott, "shields.notchanged");
             }
 			
             global.ent.shields = new_shields;
@@ -174,11 +174,11 @@ function action_apply_change(type, value) {
             if (phaser_change > 0) {
                 if (global.ent.energy < phaser_change) {
                     var energy_value = global.ent.energy;
-                    return queue_dialog("Chekov", "phasers.toohigh");
+                    return queue_dialog(Speaker.Chekov, "phasers.toohigh");
                 }
                 global.ent.energy -= phaser_change;
                 var phaser_value = new_phasers;
-                queue_dialog("Chekov", "phasers.raised", vo_chekov_phasers_armed, undefined);
+                queue_dialog(Speaker.Chekov, "phasers.raised", vo_chekov_phasers_armed, undefined);
                 // Queue the player attack
 				var queue = global.queue;
 				var q_len = array_length(queue);
@@ -200,7 +200,7 @@ function action_setstate(state) {
         case HoverState.Phasers:
             var system = (state == HoverState.Shields) ? "shields" : "phasers";
             var value_field = system;
-            var speaker = (state == HoverState.Shields) ? "Scott" : "Chekov";
+            var speaker = (state == HoverState.Shields) ? Speaker.Scott : Speaker.Chekov;
             var line = (state == HoverState.Shields) ? "shields.damaged" : "phasers.damaged";
 
 			// System is damaged, return early
@@ -297,7 +297,7 @@ function action_lrs(sx, sy) {
 /// @description: Handles when player docks with nearby starbase
 function action_stardock() {
 	global.ent.isdocked = true;
-	queue_dialog("Kirk", "contact.docking");
+	queue_dialog(Speaker.Kirk, "contact.docking");
 	// Refill
 	show_debug_message("Player refilled at Starbase!");
 	global.queue[array_length(global.queue)] = function() {

@@ -1,17 +1,23 @@
 /// @description: Returns normalized translation for a key from global.lang_data
 /// @param {array} text: Dialog array (speaker, line, voice)
 function process_dialog(text) {
-    // Resolve speaker structs using speaker keys from struct
-    for (var i = 0; i < array_length(text); i++) {
-        var line = text[i];
-        if (line.speaker != undefined) {
-            var name = line.speaker;
-            if (variable_struct_exists(obj_controller_dialog.speakers, name)) {
-                line.speaker_data = variable_struct_get(obj_controller_dialog.speakers, name);
-            } else {
-                line.speaker_data = { x: 32, y: 32, color: c_white };
-            }
-        }
+	// Resolve speaker structs using speaker keys from struct
+	for (var i = 0; i < array_length(text); i++) {
+		var line = text[i];
+        
+		if (line.speaker != undefined) {
+			var speaker_id = line.speaker;
+            
+			// Check that speaker_id is valid index for speakers array
+			if (is_array(obj_controller_dialog.speakers)
+			&& speaker_id >= 0
+			&& speaker_id < array_length(obj_controller_dialog.speakers)) {
+				line.speaker_data = obj_controller_dialog.speakers[speaker_id];
+			}
+			else {
+				line.speaker_data = { x: 32, y: 32, color: c_white };
+			}
+		}
     }
     
     with (obj_controller_dialog) {
@@ -20,12 +26,12 @@ function process_dialog(text) {
         show_text = true;
         voice_handle = -1;
         no_voice_timer = 0;
-		timer = 0.3;
+        timer = 0.3;
     }
 }
 
 /// @description: Returns a dialog array for immediate processing by handle_queue
-/// @param {string} speaker: The speaker's name
+/// @param {enum} speaker: The speaker enum
 /// @param {string} line_id: The localization key for the dialog line
 /// @param {any} voice_id: Sound asset to use or noone
 /// @param {struct} format: Optional format arguments for lang_format
@@ -44,12 +50,13 @@ function immediate_dialog(speaker, line_id, voice_id = noone, format = undefined
 }
 
 /// @description: Queues a dialog line for handle_queue
-/// @param {string} speaker: The speaker's name
+/// @param {enum} speaker: The speaker enum
 /// @param {string} line_id: The localization key for the dialog line
 /// @param {any} voice_id: Sound asset to use or noone
 /// @param {struct} format: Optional format arguments for lang_format
 function queue_dialog(speaker, line_id, voice_id = noone, format = undefined) {
-	global.busy = true;
+    global.busy = true;
+    
     var resolved_line = is_struct(format)
         ? lang_format(line_id, format)
         : lang_get(line_id);
