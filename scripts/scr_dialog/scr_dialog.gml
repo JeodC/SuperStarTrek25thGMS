@@ -24,7 +24,7 @@ function dialog_enemy_check() {
 	    // Add Uhura's line only if first enemy encounter
 	    if (!obj_controller_player.firstenemyspotted) {
 			obj_controller_player.firstenemyspotted = true;
-			queue_dialog(Speaker.Uhura, "gamestart.enemyspotted", vo_uhura_enemy_spotted, undefined);
+			queue_dialog(Speaker.Uhura, "gamestart.enemyspotted", vo_uhura_enemy_spotted);
 	    }
     
 	    // Always add Kirk's red alert
@@ -32,7 +32,7 @@ function dialog_enemy_check() {
 
 	    // Spock chimes in if shields are down or low
 	    if (global.ent.shields == 0) {
-			queue_dialog(Speaker.Spock, "redalert.shieldsdown", vo_spock_shields_down, undefined);
+			queue_dialog(Speaker.Spock, "redalert.shieldsdown", vo_spock_shields_down);
 	    }
 	    else if (global.ent.shields < 200) {
 	        queue_dialog(Speaker.Spock, "redalert.shieldslow");
@@ -59,7 +59,7 @@ function dialog_navigation(mode) {
     var sector = global.galaxy[global.ent.sx][global.ent.sy];
 	
     if (mode == 1) {
-        queue_dialog(Speaker.Kirk, "engines.warp.engage", vo_kirk_warp, undefined);
+        queue_dialog(Speaker.Kirk, "engines.warp.engage", vo_kirk_warp);
         if (global.ent.system.warp < 10) {
             queue_dialog(Speaker.Spock, "engines.warp.damaged");
         } else if (sector.enemynum > 0) {
@@ -72,7 +72,7 @@ function dialog_navigation(mode) {
 				global.inputmode.mode = InputMode.Warp;
 			};
         } else {
-            queue_dialog(Speaker.Sulu, "engines.aye", vo_sulu_aye, undefined);
+            queue_dialog(Speaker.Sulu, "engines.aye", vo_sulu_aye);
 			// Pull up the warp map
 			global.inputmode.cursor_x = global.ent.sx;
 			global.inputmode.cursor_y = global.ent.sy;
@@ -83,7 +83,7 @@ function dialog_navigation(mode) {
         }
     }
 	else if (mode == 2) {
-        queue_dialog(Speaker.Kirk, "engines.impulse.engage", vo_kirk_impulse, undefined);
+        queue_dialog(Speaker.Kirk, "engines.impulse.engage", vo_kirk_impulse);
         if (global.ent.system.navigation < 10) {
             queue_dialog(Speaker.Sulu, "engines.impulse.damaged");
         } else if (sector.enemynum > 0) {
@@ -101,7 +101,7 @@ function dialog_navigation(mode) {
 				global.inputmode.cursor_y = global.ent.ly;
 			};
         } else {
-            queue_dialog(Speaker.Sulu, "engines.aye", vo_sulu_aye, undefined);
+            queue_dialog(Speaker.Sulu, "engines.aye", vo_sulu_aye);
 			if (!obj_controller_player.impulsehelp) {
 				queue_dialog(Speaker.None, "engines.impulse.help1", -1, { key: get_keyname("move") });
 				queue_dialog(Speaker.None, "engines.impulse.help2", -1, { key: get_keyname("confirm") });
@@ -130,7 +130,7 @@ function dialog_weapons(mode) {
 
     switch (mode) {
         case 1:
-			if (!obj_controller_player.speech_phaserfire) queue_dialog(Speaker.Kirk, "phasers.fire", vo_kirk_fire_phasers, undefined);
+			if (!obj_controller_player.speech_phaserfire) queue_dialog(Speaker.Kirk, "phasers.fire", vo_kirk_fire_phasers);
 			obj_controller_player.speech_phaserfire = true;
 			// Check responses
             if (global.ent.system.phasers < 15) {
@@ -146,7 +146,7 @@ function dialog_weapons(mode) {
 			}
             break;
         case 2:
-            if (!obj_controller_player.speech_torparm) queue_dialog(Speaker.Kirk, "torpedo.fire", vo_kirk_arm_torpedo, undefined);
+            if (!obj_controller_player.speech_torparm) queue_dialog(Speaker.Kirk, "torpedo.fire", vo_kirk_arm_torpedo);
 			obj_controller_player.speech_torparm = true;
 			// Check response
             if (global.ent.torpedoes < 1) {
@@ -154,7 +154,7 @@ function dialog_weapons(mode) {
             } else if (global.ent.torpedoes == 0) {
                 queue_dialog(Speaker.Spock, "torpedo.damaged");
             } else {
-                queue_dialog(Speaker.Chekov, "torpedo.ready", vo_chekov_torpedoes, undefined);
+                queue_dialog(Speaker.Chekov, "torpedo.ready", vo_chekov_torpedoes);
 				global.queue[array_length(global.queue)] = function() {
 					obj_controller_player.display = Reports.Torpedoes;
 					global.inputmode.mode = InputMode.Torpedoes;
@@ -219,11 +219,11 @@ function dialog_docking() {
     var sector = global.galaxy[global.ent.sx][global.ent.sy];
     
     if (sector.basenum < 1) {
-        queue_dialog(Speaker.Kirk, "contact.requestbase1", vo_kirk_uhura, undefined);
+        queue_dialog(Speaker.Kirk, "contact.requestbase1", vo_kirk_uhura);
         queue_dialog(Speaker.Kirk, "contact.requestbase2");
         queue_dialog("Uhura", "contact.nobases");
     } else {
-        queue_dialog(Speaker.Kirk, "contact.nearbase", vo_kirk_starbase, undefined);
+        queue_dialog(Speaker.Kirk, "contact.nearbase", vo_kirk_starbase);
         if (sector.enemynum > 0) {
             queue_dialog("Uhura", "contact.danger");
         } else {

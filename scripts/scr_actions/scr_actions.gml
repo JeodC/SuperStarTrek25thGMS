@@ -178,7 +178,7 @@ function action_apply_change(type, value) {
                 }
                 global.ent.energy -= phaser_change;
                 var phaser_value = new_phasers;
-                queue_dialog(Speaker.Chekov, "phasers.raised", vo_chekov_phasers_armed, undefined);
+                queue_dialog(Speaker.Chekov, "phasers.raised", vo_chekov_phasers_armed);
                 // Queue the player attack
 				var queue = global.queue;
 				var q_len = array_length(queue);
