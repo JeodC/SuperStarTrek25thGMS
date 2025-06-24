@@ -140,6 +140,26 @@ function handle_ui_input() {
 	}
 }
 
+/// @desciption: Feedback if a UI button is pressed
+/// @param {array} buttons: Array of UI buttons to listen to
+function button_listener(buttons) {
+	if (global.input.confirm && is_array(buttons)) {
+	    if (global.selected_index >= 0 && global.selected_index < array_length(buttons)) {
+	        var btn = buttons[global.selected_index];
+			
+			// Tell the button it was pressed
+	        if (instance_exists(btn)) {
+	            btn.pressed = true;
+	            global.menu_selected = btn.menu_id;
+	            audio_play_sound(snd_ui_click, 0, false);
+				global.busy = true;
+				alarm[1] = 5;
+	        }
+	    }
+	    global.input.confirm = false;
+	}
+}
+
 /// @description: Handles Bridge input
 function handle_bridge_input() {
     var min_state = all_regions[0].state;
@@ -800,6 +820,7 @@ function assign_input() {
 		|| gamepad_button_check(0, gp_padr);
 }
 
+/// @description: Assigns keyboard shortcuts to actions
 function check_shortcuts() {
     if (keyboard_check_pressed(ord("L"))) action = HoverState.LongRangeSensors;
     if (keyboard_check_pressed(ord("T"))) action = HoverState.Torpedoes;
@@ -814,25 +835,4 @@ function check_shortcuts() {
 	if (gamepad_button_check(0, gp_select))  action = HoverState.Options;
     if (keyboard_check_pressed(vk_f1))    action = HoverState.Help;
 	execute_hover_action(action);
-}
-
-/// @desciption: Feedback if a UI button is pressed
-/// @param {array} buttons: Array of UI buttons to listen to
-function button_listener(buttons) {
-	if (global.input.confirm && is_array(buttons)) {
-	    if (global.selected_index >= 0 && global.selected_index < array_length(buttons)) {
-	        var btn = buttons[global.selected_index];
-			
-			// Tell the button it was pressed
-	        if (instance_exists(btn)) {
-	            btn.pressed = true;
-	            global.menu_selected = btn.menu_id;
-	            audio_play_sound(snd_ui_click, 0, false);
-				global.busy = true;
-				alarm[1] = 5;
-	        }
-	    }
-		global.selected_index = 0;
-	    global.input.confirm = false;
-	}
 }
