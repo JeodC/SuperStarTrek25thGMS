@@ -61,6 +61,7 @@
     {"id":{"name":"obj_controller_player","path":"objects/obj_controller_player/obj_controller_player.yy",},},
     {"id":{"name":"obj_controller_ui","path":"objects/obj_controller_ui/obj_controller_ui.yy",},},
     {"id":{"name":"obj_explosion","path":"objects/obj_explosion/obj_explosion.yy",},},
+    {"id":{"name":"obj_fade","path":"objects/obj_fade/obj_fade.yy",},},
     {"id":{"name":"obj_particle","path":"objects/obj_particle/obj_particle.yy",},},
     {"id":{"name":"obj_phaser","path":"objects/obj_phaser/obj_phaser.yy",},},
     {"id":{"name":"obj_torpedo","path":"objects/obj_torpedo/obj_torpedo.yy",},},

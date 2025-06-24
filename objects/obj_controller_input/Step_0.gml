@@ -406,9 +406,10 @@ function handle_hover_action(action) {
             };
             break;
         case HoverState.Options:
-			if (global.game.state != State.OptMenu) {
-				create_options_buttons();
-			}
+		if (!instance_exists(obj_fade)) {
+			instance_create_layer(0, 0, "Overlay", obj_fade);
+		}
+		create_options_buttons();
             break;
         case HoverState.Help:
             obj_controller_player.display = Reports.Help;

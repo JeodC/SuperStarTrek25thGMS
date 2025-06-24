@@ -10,7 +10,6 @@ switch (menu_id) {
 		global.inputmode.mode = InputMode.None;
 		global.game.state = State.Movie;
 		cleanup_buttons();
-		draw_clear(c_black);
 		if (!instance_exists(obj_controller_movies)) {
 			instance_create_layer(0, 0, "Overlay", obj_controller_movies);
 		}
@@ -36,19 +35,17 @@ switch (menu_id) {
 		}
 	    break;
 	case "ui.options":
-		if (global.game.state != State.OptMenu) {
-			create_options_buttons();
-		}
+		create_options_buttons();
 		break;
 	case "ui.credits":
 		global.game.state = State.Credits;
 		room_goto(rm_endgame);
 		break;
 	case "ui.exit":
-            if (global.game.state == State.Title) {
-                game_end();
-            }
-            break;
+		if (global.game.state == State.Title) {
+			game_end();
+		}
+		break;
 	case "ui.default":
 		global.audio_mode = 0;
 		global.lang_index = 0;
@@ -57,10 +54,6 @@ switch (menu_id) {
 		load_language(global.lang_selected);
 		global.lang = global.lang_selected;
 		refresh_button_text();
-		break;
-	case "ui.load":
-		break;
-	case "ui.save":
 		break;
 	case "ui.restart":
 		game_restart();
