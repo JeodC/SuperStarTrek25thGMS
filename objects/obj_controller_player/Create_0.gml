@@ -1,8 +1,8 @@
-// @obj_controller_player_Create
+/// @obj_controller_player_Create
 /// @description: Handles game state
 
 if (global.game.state == State.Briefing) {
-	audio_play_sound(snd_ui_briefing, 0, false);
+  audio_play_sound(snd_ui_briefing, 0, false);
 }
 
 // Local vars
@@ -39,22 +39,22 @@ attack_buffer = [];
 attack_indexes = [];
 
 enum Reports {
-    Damage,
-    Mission,
-    Scan,
-	Impulse,
-	Warp,
-	Torpedoes,
-	Help,
-	Default
+  Damage,
+  Mission,
+  Scan,
+  Impulse,
+  Warp,
+  Torpedoes,
+  Help,
+  Default
 }
 
 enum Condition {
-	Green,
-	Yellow,
-	Red,
-	Stranded,
-	Destroyed,
-	NoTime,
-	Win
+  Green,
+  Yellow,
+  Red,
+  Stranded,
+  Destroyed,
+  NoTime,
+  Win
 }

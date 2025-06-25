@@ -12,15 +12,15 @@ y1 = 0;
 x2 = 0;
 y2 = 0;
 
-// Initialize screen pixel coords (these will be recalculated each step if dynamic)
+// Initialize screen pixel coords (these will be recalculated each step if
+// dynamic)
 sx = 0;
 sy = 0;
 ex = 0;
 ey = 0;
 
 // Initialize phaser colors
-type = 1
-color1 = c_red;
+type = 1 color1 = c_red;
 color2 = c_orange;
 
 // Animation timer and duration
