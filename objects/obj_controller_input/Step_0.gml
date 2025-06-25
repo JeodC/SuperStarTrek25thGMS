@@ -696,10 +696,6 @@ function handle_torpedo_input() {
           point_direction(screen_px, screen_py, mx, my);
       global.input.mx = mx;
       global.input.my = my;
-      show_debug_message(
-          "Mouse Torpedo Cursor: " +
-          string([ global.input.mx, global.input.my ]) +
-          ", Angle: " + string(obj_controller_player.torp_angle));
     }
   }
 

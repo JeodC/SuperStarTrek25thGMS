@@ -54,7 +54,7 @@ function queue_next_enemy_attack(i, post) {
           var data = obj_controller_player._data;
           show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
           global.inputmode.mode = global.inputmode.tmp_old;
-          if (global.ent.condition != Condition.Destroyed) {
+          if (global.ent.condition != Condition.Destroyed && !is_undefined(data.post)) {
             // If it's a big array it's impulse path
             if (is_array(data.post) && array_length(data.post) > 0 &&
                 is_array(data.post[0])) {
@@ -553,13 +553,13 @@ function destroy_enemy(idx) {
       for (var i = array_length(player.local_objects) - 1; i >= 0; i--) {
         var obj = player.local_objects[i];
         if (is_struct(obj) && obj.type == "enemy" && obj.index == idx) {
-          array_delete(player.local_objects, i, 1);
+          player.local_objects[i] = undefined;
         }
       }
       for (var i = array_length(player.local_enemies) - 1; i >= 0; i--) {
         var obj = player.local_enemies[i];
         if (is_struct(obj) && obj.index == idx) {
-          array_delete(player.local_enemies, i, 1);
+          player.local_enemies[i] = undefined;
         }
       }
     }
