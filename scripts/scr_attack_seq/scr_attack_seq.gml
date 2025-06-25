@@ -12,7 +12,21 @@ function enemy_attack(post) {
   // Get a snapshot of current enemies by copying local_enemies to
   // attack_targets Will prevent desyncs if enemies are destroyed
   var len = array_length(player.local_enemies);
-  player.attack_targets = array_create(len, undefined);
+  player.attack_targets = [];
+
+  for (var j = 0; j < len; j++) {
+    var e = player.local_enemies[j];
+    if (is_struct(e)) {
+      if (variable_instance_exists(e, "index") && is_numeric(e.index)) {
+        array_push(player.attack_targets, e);
+      } else {
+        show_debug_message("Invalid enemy (missing or invalid index) at setup index " + string(j));
+      }
+    } else {
+      show_debug_message("Invalid enemy (not a struct) at setup index " + string(j));
+    }
+  }
+  
   array_copy(player.attack_targets, 0, player.local_enemies, 0, len);
   player.attack_index = 0;
   player.attack_buffer = [];
@@ -76,11 +90,13 @@ function queue_next_enemy_attack(i, post) {
   var e = targets[i];
 
   // Validate enemy
-  if (!is_struct(e) || is_undefined(global.allenemies[e.index]) ||
-      !is_struct(global.allenemies[e.index]) ||
-      global.allenemies[e.index].energy <= 0 ||
-      global.allenemies[e.index].sx != global.ent.sx ||
-      global.allenemies[e.index].sy != global.ent.sy) {
+  if (!is_struct(e) || !is_numeric(e.index) || e.index < 0 ||
+    e.index >= array_length(global.allenemies) ||
+    is_undefined(global.allenemies[e.index]) ||
+    !is_struct(global.allenemies[e.index]) ||
+    global.allenemies[e.index].energy <= 0 ||
+    global.allenemies[e.index].sx != global.ent.sx ||
+    global.allenemies[e.index].sy != global.ent.sy) {
     show_debug_message("Skipping invalid enemy index " + string(e.index) +
                        " at [" + string(e.lx) + "," + string(e.ly) + "]");
     queue_next_enemy_attack(i + 1, post);
@@ -515,8 +531,9 @@ function destroy_enemy(idx) {
                                  {lx : e.lx, ly : e.ly});
   particle_explosion(e.lx, e.ly);
 
-  // Update game state
-  array_delete(global.allenemies, idx, 1);
+  // Instead of deleting and shifting, mark the enemy as undefined
+  global.allenemies[idx] = undefined;
+
   global.game.totalenemies = max(global.game.totalenemies - 1, 0);
 
   // Update local sector's enemy count
@@ -537,16 +554,12 @@ function destroy_enemy(idx) {
         var obj = player.local_objects[i];
         if (is_struct(obj) && obj.type == "enemy" && obj.index == idx) {
           array_delete(player.local_objects, i, 1);
-        } else {
-          obj.index -= 1;
         }
       }
       for (var i = array_length(player.local_enemies) - 1; i >= 0; i--) {
         var obj = player.local_enemies[i];
         if (is_struct(obj) && obj.index == idx) {
           array_delete(player.local_enemies, i, 1);
-        } else {
-          obj.index -= 1;
         }
       }
     }
