@@ -1,6 +1,6 @@
 /// @description: Entrypoint for enemy attack sequence
 /// @param {any} post: Player impulse path (array) or warp destination ([tx, ty]) -- Gets passed into queue_next_enemy_attack
-function enemy_attack(post) {
+function enemy_attack(post = undefined) {
 
   var player = instance_find(obj_controller_player, 0);
   global.busy = true;
@@ -27,7 +27,6 @@ function enemy_attack(post) {
     }
   }
   
-  array_copy(player.attack_targets, 0, player.local_enemies, 0, len);
   player.attack_index = 0;
   player.attack_buffer = [];
   player.attack_indexes = [];
@@ -54,18 +53,22 @@ function queue_next_enemy_attack(i, post) {
           var data = obj_controller_player._data;
           show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
           global.inputmode.mode = global.inputmode.tmp_old;
-          if (global.ent.condition != Condition.Destroyed && !is_undefined(data.post)) {
-            // If it's a big array it's impulse path
-            if (is_array(data.post) && array_length(data.post) > 0 &&
-                is_array(data.post[0])) {
-              global.ent.impulse_move(data.post);
+
+          if (is_struct(data) && global.ent.condition != Condition.Destroyed) {
+            if (!is_undefined(data.post)) {
+              // If it's a big array it's impulse path
+              if (is_array(data.post) && array_length(data.post) > 0 &&
+                  is_array(data.post[0])) {
+                global.ent.impulse_move(data.post);
+              }
               // Else it's warp coordinates
-            } else if (is_array(data.post) && array_length(data.post) == 2) {
-              var tx = data.post[0];
-              var ty = data.post[1];
-              show_debug_message("Warping to sector: [" + string(tx) + "," +
-                                 string(ty) + "]");
-              change_sector(tx, ty);
+              else if (array_length(data.post) == 2) {
+                var tx = data.post[0];
+                var ty = data.post[1];
+                show_debug_message("Warping to sector: [" + string(tx) + "," +
+                                  string(ty) + "]");
+                change_sector(tx, ty);
+              }
             }
           }
           return {delay : 10};
