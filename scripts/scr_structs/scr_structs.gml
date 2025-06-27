@@ -32,7 +32,15 @@ function Sector() {
 
 ///@description: Struct for single Enemy ship
 function EnemyShip() {
-  return {sx : 0, sy : 0, lx : 0, ly : 0, energy : 0, maxenergy : 0, dir : 0};
+  return {
+      sx : 0, 
+      sy : 0,
+      lx : 0, 
+      ly : 0, 
+      energy : 0, 
+      maxenergy : 0, 
+      dir : 0
+  };
 }
 
 ///@description: Struct for single Starbase

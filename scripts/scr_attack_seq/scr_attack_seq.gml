@@ -200,7 +200,7 @@ function queue_next_enemy_attack(i, post) {
         return {delay : 40};
       });
 
-  // Queue dialog for crew reaction and calculate damages if any
+  // Calculate damages and queue crew dialog
   array_push(
       global.queue, function() {
         var idx = obj_controller_player.attack_indexes[global.index];
@@ -255,45 +255,8 @@ function queue_next_enemy_attack(i, post) {
           return undefined;
         }
 
-        // Various reaction dialogs
-        var spock_dialog = [];
-        if (obj_controller_player.speech_phaserhit) {
-          spock_dialog =
-              [immediate_dialog(Speaker.Spock, "battle.enthit2", noone,
-                                {energy : round(data.damage)})[0]];
-        } else {
-          spock_dialog = [immediate_dialog(Speaker.Spock, "battle.enthit1",
-                                           vo_spock_phaser_hit)[0]];
-        }
-        obj_controller_player.speech_phaserhit =
-            !obj_controller_player.speech_phaserhit;
-
-        var shield_dialog = [];
-        if (global.ent.shields > 200 && global.ent.generaldamage < 1) {
-          shield_dialog =
-              [immediate_dialog(Speaker.Scott, "battle.shields1")[0]];
-        } else if (global.ent.shields < 10) {
-          shield_dialog =
-              [immediate_dialog(Speaker.Spock, "redalert.shieldsdown")[0]];
-        } else {
-          shield_dialog =
-              [immediate_dialog(Speaker.Spock, "battle.shields2", noone,
-                                {shields : global.ent.shields})[0]];
-        }
-
-        var gendmg_dialog = [];
-        if (global.ent.generaldamage > 2) {
-          gendmg_dialog = [immediate_dialog(Speaker.Scott, "gendmg.major")[0]];
-        } else if (global.ent.generaldamage > 0 &&
-                   !obj_controller_player.speech_damage) {
-          gendmg_dialog = [
-            immediate_dialog(Speaker.Uhura, "gendmg.minor")[0],
-            immediate_dialog(Speaker.McCoy, "gendmg.minor2", vo_mccoy_sickbay)[0]
-          ];
-        }
-        obj_controller_player.speech_damage = global.ent.generaldamage > 0;
-
-        return array_concat(spock_dialog, shield_dialog, gendmg_dialog);
+        // Return dialogs
+        return dialog_disruptorhit(data.damage);
       });
 
   // Queue the next enemy attack
@@ -374,12 +337,12 @@ function queue_next_attack(i) {
   var e = targets[i];
 
   // Check if still valid
-  if (!is_struct(e) || is_undefined(global.allenemies[e.index]) ||
-      global.allenemies[e.index].energy <= 0) {
-    show_debug_message("Warning: Skipping invalid enemy at index " +
-                       string(e.index));
-    queue_next_attack(i + 1);
-    return;
+  var len = array_length(global.allenemies);
+  if (!is_struct(e) || e.index < 0 || e.index >= len || 
+  !is_struct(global.allenemies[e.index]) || global.allenemies[e.index].energy <= 0) {
+      show_debug_message("Warning: Skipping invalid enemy at index " + string(e.index));
+      queue_next_attack(i + 1);
+      return;
   }
 
   // Calculate attack details
@@ -437,39 +400,28 @@ function queue_next_attack(i) {
         var idx = obj_controller_player._data.idx;
 
         // Validate enemy index
-        if (idx >= array_length(global.allenemies) ||
-            !is_struct(global.allenemies[idx])) {
-          show_debug_message("Warning: Enemy index " + string(idx) +
-                             " invalid during damage phase!");
+        if (idx < 0 || idx >= array_length(global.allenemies) || !is_struct(global.allenemies[idx])) {
+          show_debug_message("Warning: Enemy index " + string(idx) + " invalid during damage phase!");
           return [];
         }
 
-        // Adjust index using destroyed_count
-        var new_idx = idx - obj_controller_player.destroyed_count;
-
-        // Verify coordinates match
-        if (new_idx < array_length(global.allenemies) &&
-            is_struct(global.allenemies[new_idx]) &&
-            global.allenemies[new_idx].lx == lx &&
-            global.allenemies[new_idx].ly == ly) {
-        } else {
-          new_idx = -1;
-          for (var k = 0; k < array_length(global.allenemies); k++) {
-            if (is_struct(global.allenemies[k]) &&
-                global.allenemies[k].lx == lx &&
-                global.allenemies[k].ly == ly &&
-                global.allenemies[k].sx == global.ent.sx &&
-                global.allenemies[k].sy == global.ent.sy) {
-              new_idx = k;
-              break;
-            }
-          }
-          if (new_idx == -1) {
-            show_debug_message("Error: No enemy found at [" + string(lx) + "," +
-                               string(ly) + "]!");
-            return [];
-          }
-        }
+        // Adjust index
+        var new_idx = -1;
+        for (var k = 0; k < array_length(global.allenemies); k++) {
+          if (is_struct(global.allenemies[k]) &&
+             global.allenemies[k].lx == lx &&
+             global.allenemies[k].ly == ly &&
+             global.allenemies[k].sx == global.ent.sx &&
+             global.allenemies[k].sy == global.ent.sy) {
+             new_idx = k;
+             break;
+         }
+       }
+       
+       if (new_idx == -1) {
+          show_debug_message("Error: No enemy found at [" + string(lx) + "," + string(ly) + "]!");
+          return [];
+       }
 
         // Apply damage
         var new_energy = max(current_energy - damage, 0);
@@ -481,29 +433,8 @@ function queue_next_attack(i) {
                            " damage. Enemy energy now " + string(new_energy) +
                            " down from " + string(current_energy) + ".");
 
-        // Dialog
-        if (damage < current_energy / 7) {
-          return immediate_dialog(Speaker.Chekov, "phasers.noeffect");
-        }
-
-        var sulu = immediate_dialog(
-            Speaker.Sulu, "weapons.enemyhit", noone,
-            {hp : damage, coord : string(lx + 1) + "," + string(ly + 1)});
-
-        if (new_energy > 90) {
-          return [
-            sulu[0], immediate_dialog(Speaker.Spock, "weapons.energyleft",
-                                      noone, {energy : round(new_energy)})[0]
-          ];
-        } else if (new_energy <= 0) {
-          obj_controller_player.destroyed_count += 1; // Increment counter
-          var result = destroy_enemy(new_idx);
-          if (is_array(result))
-            return [ sulu[0], result[0] ];
-          return [sulu[0]];
-        }
-
-        return [sulu[0]];
+        // Return dialog
+        return dialog_phaserhit(damage, current_energy, new_energy, lx, ly, new_idx);
       });
 
   // Next attack

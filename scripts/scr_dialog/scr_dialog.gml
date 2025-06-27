@@ -400,3 +400,76 @@ function dialog_cancel(type) {
   }
   return function(){};
 }
+
+/// @description: Handles dialogs reacting to player phasers hitting enemies
+/// @param damage
+/// @param current_energy
+/// @param new_energy
+/// @param lx
+/// @param ly
+/// @param new_idx
+function dialog_phaserhit(damage, current_energy, new_energy, lx, ly, new_idx) {
+  if (damage < current_energy / 7) {
+    return immediate_dialog(Speaker.Chekov, "phasers.noeffect");
+  }
+
+  var sulu = immediate_dialog(
+      Speaker.Sulu, "weapons.enemyhit", noone,
+      {hp : damage, coord : string(lx + 1) + "," + string(ly + 1)});
+
+  if (new_energy > 90) {
+    return [
+      sulu[0],
+      immediate_dialog(Speaker.Spock, "weapons.energyleft", noone, {energy : round(new_energy)})[0]
+    ];
+  } else if (new_energy <= 0) {
+    obj_controller_player.destroyed_count += 1;
+    var result = destroy_enemy(new_idx);
+    if (is_array(result)) return [ sulu[0], result[0] ];
+    return [sulu[0]];
+  }
+
+  return [sulu[0]];
+}
+
+/// @description: Handles player reaction dialog after being hit
+/// @param {real} damage: The amount of damage the player took
+function dialog_disruptorhit(damage) {
+  var spock_dialog = [];
+  if (obj_controller_player.speech_phaserhit) {
+    spock_dialog = [
+      immediate_dialog(Speaker.Spock, "battle.enthit2", noone, {energy : round(damage)})[0]
+    ];
+  } else {
+    spock_dialog = [
+      immediate_dialog(Speaker.Spock, "battle.enthit1", vo_spock_phaser_hit)[0]
+    ];
+  }
+  obj_controller_player.speech_phaserhit = !obj_controller_player.speech_phaserhit;
+
+  var shield_dialog = [];
+  if (global.ent.shields > 200 && global.ent.generaldamage < 1) {
+    shield_dialog = [immediate_dialog(Speaker.Scott, "battle.shields1")[0]];
+  } else if (global.ent.shields < 10) {
+    shield_dialog = [immediate_dialog(Speaker.Spock, "redalert.shieldsdown")[0]];
+  } else {
+    shield_dialog = [
+      immediate_dialog(Speaker.Spock, "battle.shields2", noone,
+                       {shields : global.ent.shields})[0]
+    ];
+  }
+
+  var gendmg_dialog = [];
+  if (global.ent.generaldamage > 2) {
+    gendmg_dialog = [immediate_dialog(Speaker.Scott, "gendmg.major")[0]];
+  } else if (global.ent.generaldamage > 0 &&
+             !obj_controller_player.speech_damage) {
+    gendmg_dialog = [
+      immediate_dialog(Speaker.Uhura, "gendmg.minor")[0],
+      immediate_dialog(Speaker.McCoy, "gendmg.minor2", vo_mccoy_sickbay)[0]
+    ];
+  }
+  obj_controller_player.speech_damage = global.ent.generaldamage > 0;
+
+  return array_concat(spock_dialog, shield_dialog, gendmg_dialog);
+}
