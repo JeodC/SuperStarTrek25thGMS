@@ -279,35 +279,47 @@ function dialog_docking() {
 }
 
 /// @description: Queues dialog for enemy scan
-/// @param {real} enemy: Enemy index for lookup
+/// @param {real} enemy: Index in player.local_enemies
 function dialog_srs(enemy) {
-
-  // SRS is broken, can't scan
+  // Check if SRS is damaged
   if (global.ent.system.srs < 75) {
     queue_dialog(Speaker.Spock, "srs.damaged");
+    return;
   }
 
-  // Pull the player and local enemy data to get the global index
   var player = instance_find(obj_controller_player, 0);
-  var local_enemy = player.local_enemies[enemy];
+  if (!player) {
+    show_debug_message("Player not found.");
+    return;
+  }
 
-  // Get global enemy data using local enemy's index
-  var global_enemy_idx = local_enemy.index;
+  // Get global index from local_enemies
+  if (enemy < 0 || enemy >= array_length(player.local_enemies)) {
+    show_debug_message("Invalid local enemy index: " + string(enemy));
+    return;
+  }
+
+  var global_enemy_idx = player.local_enemies[enemy];
+
+  // Validate the global enemy
+  if (!is_numeric(global_enemy_idx) || global_enemy_idx < 0 || global_enemy_idx >= array_length(global.allenemies)) {
+    show_debug_message("Invalid global enemy index: " + string(global_enemy_idx));
+    return;
+  }
 
   var ge = global.allenemies[global_enemy_idx];
+  if (!is_struct(ge) || ge.energy <= 0) {
+    show_debug_message("Enemy at index " + string(global_enemy_idx) + " is invalid or destroyed.");
+    return;
+  }
 
-  // Debug: Display global enemy data
-  show_debug_message("Global enemy[" + string(global_enemy_idx) + "]: energy=" +
-                     string(ge.energy) + ", maxenergy=" + string(ge.maxenergy) +
-                     ", lx=" + string(ge.lx) + ", ly=" + string(ge.ly));
-
-  // Dialog logic using global enemy data
+  // Dialog based on damage level
   if (ge.energy == ge.maxenergy) {
     queue_dialog(Speaker.Sulu, "srs.nodamage");
   } else if (ge.energy < 20) {
     queue_dialog(Speaker.Spock, "srs.majordamage");
-  } else if (ge.energy < ge.maxenergy) {
-    queue_dialog(Speaker.Spock, "srs.energy", noone, {energy : ge.energy});
+  } else {
+    queue_dialog(Speaker.Spock, "srs.energy", noone, { energy: ge.energy });
   }
 
   if (global.ent.shields < 100) {
@@ -425,7 +437,6 @@ function dialog_phaserhit(damage, current_energy, new_energy, lx, ly, new_idx) {
   } else if (new_energy <= 0) {
     obj_controller_player.destroyed_count += 1;
     var result = destroy_enemy(new_idx);
-    if (is_array(result)) return [ sulu[0], result[0] ];
     return [sulu[0]];
   }
 

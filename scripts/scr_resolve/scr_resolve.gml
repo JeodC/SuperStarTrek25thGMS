@@ -216,20 +216,21 @@ function update_ship_condition() {
   }
 }
 
-/// @description: Returns stars, bases, and enemies in the specified sector, updating player arrays if player's sector
-/// @param {real} sx: Sector x coordinate in galaxy (player's sector if undefined)
-/// @param {real} sy: Sector y coordinate in galaxy (player's sector if undefined)
+/// @description: Returns stars, bases, and enemies in the specified sector,
+/// updating player arrays if sector matches player's.
+/// @param {real} sx: Sector x coordinate (defaults to player's current sector)
+/// @param {real} sy: Sector y coordinate (defaults to player's current sector)
 function get_sector_data(sx = global.ent.sx, sy = global.ent.sy) {
   var s = {
-    enemynum : 0,
-    basenum : 0,
-    starnum : 0,
-    enemies : [],
-    bases : [],
-    stars : []
+    enemynum: 0,
+    basenum: 0,
+    starnum: 0,
+    enemies: [],
+    bases: [],
+    stars: []
   };
 
-  // Get sector data
+  // Get sector data struct
   var sector = global.galaxy[sx][sy];
   s.enemynum = sector.enemynum;
   s.basenum = sector.basenum;
@@ -238,52 +239,58 @@ function get_sector_data(sx = global.ent.sx, sy = global.ent.sy) {
   // Populate stars from sector.star_positions
   for (var i = 0; i < array_length(sector.star_positions); i++) {
     var pos = sector.star_positions[i];
-    array_push(s.stars, {lx : pos[0], ly : pos[1], index : i});
+    array_push(s.stars, { lx: pos[0], ly: pos[1], index: i });
   }
 
-  // Cache enemies and bases by sector using ds_map
+  // Create maps for caching enemies and bases in this sector
   var enemy_map = ds_map_create();
   var base_map = ds_map_create();
+
+  // Collect alive enemies in sector
   for (var i = 0; i < array_length(global.allenemies); i++) {
     var e = global.allenemies[i];
-    if (is_struct(e) && e.sx == sx && e.sy == sy && e.energy > 0) {
-      ds_map_add(enemy_map, string(i), {
-        lx : e.lx,
-        ly : e.ly,
-        energy : e.energy,
-        maxenergy : e.maxenergy,
-        index : i
-      });
-    }
+    if (!is_struct(e) || e.sx != sx || e.sy != sy || e.energy <= 0) continue;
+
+    ds_map_add(enemy_map, string(i), {
+      lx: e.lx,
+      ly: e.ly,
+      energy: e.energy,
+      maxenergy: e.maxenergy,
+      index: i
+    });
   }
+
+  // Collect bases in sector
   for (var i = 0; i < array_length(global.allbases); i++) {
     var b = global.allbases[i];
-    if (is_struct(b) && b.sx == sx && b.sy == sy) {
-      ds_map_add(base_map, string(i), {
-        lx : b.lx,
-        ly : b.ly,
-        energy : variable_struct_exists(b, "energy") ? b.energy : -1,
-        index : i
-      });
-    }
+    if (!is_struct(b) || b.sx != sx || b.sy != sy) continue;
+
+    ds_map_add(base_map, string(i), {
+      lx: b.lx,
+      ly: b.ly,
+      energy: variable_struct_exists(b, "energy") ? b.energy : -1,
+      index: i
+    });
   }
 
-  // Populate enemies and bases
+  // Populate enemies array from enemy_map
   var enemy_keys = ds_map_keys_to_array(enemy_map);
   for (var i = 0; i < array_length(enemy_keys); i++) {
-                array_push(s.enemies, enemy_map[? enemy_keys[i]]);
-  }
-  var base_keys = ds_map_keys_to_array(base_map);
-  for (var i = 0; i < array_length(base_keys); i++) {
-                array_push(s.bases, base_map[? base_keys[i]]);
+    array_push(s.enemies, enemy_map[? enemy_keys[i]]);
   }
 
-  // Update counts
+  // Populate bases array from base_map
+  var base_keys = ds_map_keys_to_array(base_map);
+  for (var i = 0; i < array_length(base_keys); i++) {
+    array_push(s.bases, base_map[? base_keys[i]]);
+  }
+
+  // Update counts based on filtered arrays
   s.enemynum = array_length(s.enemies);
   s.basenum = array_length(s.bases);
   s.starnum = array_length(s.stars);
 
-  // Update player arrays if in player's sector
+  // Update player local arrays if this sector is the player's current sector
   if (sx == global.ent.sx && sy == global.ent.sy) {
     var player = instance_find(obj_controller_player, 0);
     if (player) {
@@ -291,32 +298,32 @@ function get_sector_data(sx = global.ent.sx, sy = global.ent.sy) {
       player.local_enemies = [];
       player.local_stars = [];
       player.local_bases = [];
-      var object_map = ds_map_create(); // Cache to avoid duplicates
 
-      // Add stars
+      var object_map = ds_map_create(); // to avoid duplicates
+
+      // Add stars to player arrays
       for (var i = 0; i < array_length(s.stars); i++) {
         var star = s.stars[i];
         var key = "star:" + string(star.index);
         if (!ds_map_exists(object_map, key)) {
-          var star_obj =
-              {type : "star", lx : star.lx, ly : star.ly, index : star.index};
+          var star_obj = { type: "star", lx: star.lx, ly: star.ly, index: star.index };
           array_push(player.local_objects, star_obj);
           array_push(player.local_stars, star_obj);
           ds_map_add(object_map, key, true);
         }
       }
 
-      // Add bases
+      // Add bases to player arrays
       for (var i = 0; i < array_length(s.bases); i++) {
         var base = s.bases[i];
         var key = "base:" + string(base.index);
         if (!ds_map_exists(object_map, key)) {
           var base_obj = {
-            type : "base",
-            lx : base.lx,
-            ly : base.ly,
-            energy : base.energy,
-            index : base.index
+            type: "base",
+            lx: base.lx,
+            ly: base.ly,
+            energy: base.energy,
+            index: base.index
           };
           array_push(player.local_objects, base_obj);
           array_push(player.local_bases, base_obj);
@@ -324,45 +331,39 @@ function get_sector_data(sx = global.ent.sx, sy = global.ent.sy) {
         }
       }
 
-      // Add enemies
+      // Add enemies as references (indices only)
       for (var i = 0; i < array_length(s.enemies); i++) {
         var enemy = s.enemies[i];
         var key = "enemy:" + string(enemy.index);
         if (!ds_map_exists(object_map, key)) {
-          var enemy_obj = {
-            type : "enemy",
-            lx : enemy.lx,
-            ly : enemy.ly,
-            energy : enemy.energy,
-            maxenergy : enemy.maxenergy,
-            index : enemy.index
-          };
-          array_push(player.local_objects, enemy_obj);
-          array_push(player.local_enemies, enemy_obj);
+          var enemy_ref = { type: "enemy", index: enemy.index };
+          array_push(player.local_objects, enemy_ref);
+          array_push(player.local_enemies, enemy.index);
           ds_map_add(object_map, key, true);
         }
       }
 
       ds_map_destroy(object_map);
 
-      // Update srs regions only if there are enemies
-      var srs_start_time = get_timer();
+      // Update SRS regions for hover UI if enemies present
       if (array_length(player.local_enemies) > 0) {
         update_srs_regions();
       } else {
         obj_controller_input.srs_regions = [];
-        obj_controller_input.all_regions =
-            array_concat(obj_controller_input.hover_regions,
-                         obj_controller_input.srs_regions);
+        obj_controller_input.all_regions = array_concat(
+          obj_controller_input.hover_regions,
+          obj_controller_input.srs_regions
+        );
       }
 
-      // Set an alarm to save the game
+      // Set save alarm to persist progress
       obj_controller_player.alarm[0] = 30;
     }
   }
 
   ds_map_destroy(enemy_map);
   ds_map_destroy(base_map);
+
   return s;
 }
 
@@ -382,31 +383,37 @@ function update_srs_regions() {
   obj_controller_input.all_regions = [];
   obj_controller_input.srs_regions = [];
 
-  // Add enemies
+  // Add enemies by index
   for (var i = 0; i < array_length(player.local_enemies); i++) {
-    var enemy = player.local_enemies[i];
-    var lx = enemy.lx;
-    var ly = enemy.ly;
+    var enemy_index = player.local_enemies[i];
+    if (enemy_index >= 0 && enemy_index < array_length(global.allenemies)) {
+      var enemy = global.allenemies[enemy_index];
 
-    // Calculate pixel coordinates of this cell on the SRS
-    var x1 = map_offset_x + lx * size_cell_x;
-    var y1 = map_offset_y + ly * size_cell_y;
-    var x2 = x1 + size_cell_x;
-    var y2 = y1 + size_cell_y;
+      if (is_struct(enemy) && enemy.energy > 0) {
+        var lx = enemy.lx;
+        var ly = enemy.ly;
 
-    array_push(obj_controller_input.srs_regions, {
-      x1 : x1,
-      x2 : x2,
-      y1 : y1,
-      y2 : y2,
-      state : HoverState.Enemy + i,
-      enemy_index : i
-    });
+        // Calculate pixel coordinates of this cell on the SRS
+        var x1 = map_offset_x + lx * size_cell_x;
+        var y1 = map_offset_y + ly * size_cell_y;
+        var x2 = x1 + size_cell_x;
+        var y2 = y1 + size_cell_y;
+
+        array_push(obj_controller_input.srs_regions, {
+          x1 : x1,
+          x2 : x2,
+          y1 : y1,
+          y2 : y2,
+          state : HoverState.Enemy + i,
+          enemy_index : enemy_index
+        });
+      }
+    }
   }
 
   // Combine
   obj_controller_input.all_regions = array_concat(
-      obj_controller_input.hover_regions, obj_controller_input.srs_regions);
+    obj_controller_input.hover_regions, obj_controller_input.srs_regions);
 }
 
 /// @description: Moves the player to a new sector in the galaxy, called during warp

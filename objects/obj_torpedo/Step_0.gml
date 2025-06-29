@@ -86,6 +86,7 @@ else {
     var enemy_idx = enemy_index_at_cell(sx, sy, grid_x, grid_y);
     if (enemy_idx >= 0) {
         destroy_enemy(enemy_idx);
+        get_sector_data();
         dialog_condition();
         destroy_reason = "hit enemy at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
     }

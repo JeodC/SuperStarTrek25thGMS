@@ -13,15 +13,22 @@ function draw_hover_text() {
   for (var i = 0; i < array_length(obj_controller_input.all_regions); i++) {
     var r = obj_controller_input.all_regions[i];
     if (r.state == hover) {
-      if (hover >= HoverState.Enemy &&
-          hover <
-              HoverState.Enemy +
-                  array_length(
-                      instance_find(obj_controller_player, 0).local_enemies)) {
+      if (hover >= HoverState.Enemy && hover < HoverState.Enemy + array_length(instance_find(obj_controller_player, 0).local_enemies)) {
         var player = instance_find(obj_controller_player, 0);
-        if (player && r.enemy_index < array_length(player.local_enemies)) {
-          var enemy = player.local_enemies[r.enemy_index];
-          enemy_info = "(" + string(enemy.lx) + "," + string(enemy.ly) + ")";
+        if (player) {
+          // Calculate the local enemy index from hover state
+          var local_enemy_idx = hover - HoverState.Enemy;
+          
+          // Defensive check
+          if (local_enemy_idx >= 0 && local_enemy_idx < array_length(player.local_enemies)) {
+            var enemy_index = player.local_enemies[local_enemy_idx]; // global index
+            if (enemy_index >= 0 && enemy_index < array_length(global.allenemies)) {
+              var enemy = global.allenemies[enemy_index];
+              if (is_struct(enemy)) {
+                enemy_info = "(" + string(enemy.lx) + "," + string(enemy.ly) + ")";
+              }
+            }
+          }
         }
       }
       break;

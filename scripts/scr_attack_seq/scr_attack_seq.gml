@@ -1,300 +1,266 @@
 /// @description: Entrypoint for enemy attack sequence
 /// @param {any} post: Player impulse path (array) or warp destination ([tx, ty]) -- Gets passed into queue_next_enemy_attack
 function enemy_attack(post = undefined) {
-
   var player = instance_find(obj_controller_player, 0);
+  if (!player) return;
+
   global.busy = true;
 
-  // Store the old input mode -- so cursors like impulse are not visible
-  // during attacks
+  // Hide input modes like impulse during enemy attack phase
   global.inputmode.tmp_old = global.inputmode.mode;
 
-  // Get a snapshot of current enemies by copying local_enemies to
-  // attack_targets Will prevent desyncs if enemies are destroyed
+  // Filter out invalid or destroyed enemies in-place
+  var valid_enemies = [];
   var len = array_length(player.local_enemies);
-  player.attack_targets = [];
-
-  for (var j = 0; j < len; j++) {
-    var e = player.local_enemies[j];
-    if (is_struct(e)) {
-      if (variable_instance_exists(e, "index") && is_numeric(e.index)) {
-        array_push(player.attack_targets, e);
-      } else {
-        show_debug_message("Invalid enemy (missing or invalid index) at setup index " + string(j));
+  for (var i = 0; i < len; i++) {
+    var index = player.local_enemies[i];
+    if (is_numeric(index) && index >= 0 && index < array_length(global.allenemies)) {
+      var e = global.allenemies[index];
+      if (is_struct(e) && e.energy > 0) {
+        array_push(valid_enemies, index);
       }
-    } else {
-      show_debug_message("Invalid enemy (not a struct) at setup index " + string(j));
     }
   }
-  
+
+  player.local_enemies = valid_enemies;
   player.attack_index = 0;
   player.attack_buffer = [];
   player.attack_indexes = [];
 
-  // Header for debug logs
   show_debug_message("[STARTING ENEMY ATTACK SEQUENCE]");
-  show_debug_message("Found " + string(len) + " enemies to queue for attack.");
+  show_debug_message("Found " + string(array_length(valid_enemies)) + " valid enemies to attack.");
 
-  // Start first attack
   queue_next_enemy_attack(0, post);
 }
 
 /// @description: Recursive function that queues an enemy attack in an attack sequence
-/// @param {real} i: Index in attack_targets to process
+/// @param {real} i: Index in local_enemies to process
 /// @param {any} post: Player impulse path (array) or warp destination ([tx, ty])
 function queue_next_enemy_attack(i, post) {
   var player = instance_find(obj_controller_player, 0);
-  var targets = player.attack_targets;
+  if (!player) return;
 
-  // Check if all attacks have been processed
-  if (i >= array_length(targets)) {
-    array_push(
-        global.queue, function() {
-          var data = obj_controller_player._data;
-          show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
-          global.inputmode.mode = global.inputmode.tmp_old;
+  var len = array_length(player.local_enemies);
 
-          if (is_struct(data) && global.ent.condition != Condition.Destroyed) {
-            if (!is_undefined(data.post)) {
-              // If it's a big array it's impulse path
-              if (is_array(data.post) && array_length(data.post) > 0 &&
-                  is_array(data.post[0])) {
-                global.ent.impulse_move(data.post);
-              }
-              // Else it's warp coordinates
-              else if (array_length(data.post) == 2) {
-                var tx = data.post[0];
-                var ty = data.post[1];
-                show_debug_message("Warping to sector: [" + string(tx) + "," +
-                                  string(ty) + "]");
-                change_sector(tx, ty);
-              }
-            }
+  // Done processing all attacks
+  if (i >= len) {
+    array_push(global.queue, function() {
+      var data = obj_controller_player._data;
+      show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
+      get_sector_data();
+      global.inputmode.mode = global.inputmode.tmp_old;
+
+      if (is_struct(data) && global.ent.condition != Condition.Destroyed) {
+        if (!is_undefined(data.post)) {
+          if (is_array(data.post) && array_length(data.post) > 0 &&
+              is_array(data.post[0])) {
+            global.ent.impulse_move(data.post);
+          } else if (array_length(data.post) == 2) {
+            change_sector(data.post[0], data.post[1]);
           }
-          return {delay : 10};
-        });
+        }
+      }
 
-    // Cleanup
-    array_push(
-        global.queue, function() {
-          obj_controller_player.attack_targets = [];
-          obj_controller_player.attack_buffer = [];
-          obj_controller_player.attack_indexes = [];
-          obj_controller_player._data = undefined;
-          global.queue = [];
-          global.index = 0;
-          global.busy = false;
-          return undefined;
-        });
+      return {delay : 10};
+    });
+
+    array_push(global.queue, function() {
+      obj_controller_player.attack_buffer = [];
+      obj_controller_player.attack_indexes = [];
+      obj_controller_player._data = undefined;
+      global.queue = [];
+      global.index = 0;
+      global.busy = false;
+      return undefined;
+    });
+
     return;
   }
 
-  // Capture which enemy we'll be using for this attack
-  var e = targets[i];
+  // Get enemy index from local_enemies and use it to populate enemy var
+  var enemy_index = player.local_enemies[i];
+  var enemy = global.allenemies[enemy_index];
 
-  // Validate enemy
-  if (!is_struct(e) || !is_numeric(e.index) || e.index < 0 ||
-    e.index >= array_length(global.allenemies) ||
-    is_undefined(global.allenemies[e.index]) ||
-    !is_struct(global.allenemies[e.index]) ||
-    global.allenemies[e.index].energy <= 0 ||
-    global.allenemies[e.index].sx != global.ent.sx ||
-    global.allenemies[e.index].sy != global.ent.sy) {
-    show_debug_message("Skipping invalid enemy index " + string(e.index) +
-                       " at [" + string(e.lx) + "," + string(e.ly) + "]");
+  // Validate enemy by index
+  if (!is_numeric(enemy_index) || enemy_index < 0 || enemy_index >= array_length(global.allenemies)) {
     queue_next_enemy_attack(i + 1, post);
     return;
   }
 
-  // Use global.allenemies for coordinates to ensure sync
-  var global_enemy = global.allenemies[e.index];
+  // Validate enemy by data
+  if (!is_struct(enemy) || enemy.energy <= 0 || enemy.sx != global.ent.sx || enemy.sy != global.ent.sy) {
+    queue_next_enemy_attack(i + 1, post);
+    return;
+  }
+
+  // Get player/enemy coordinates
   var px = global.ent.lx;
   var py = global.ent.ly;
-  var lx = global_enemy.lx;
-  var ly = global_enemy.ly;
+  var lx = enemy.lx;
+  var ly = enemy.ly;
+
   var dx = abs(px - lx);
   var dy = abs(py - ly);
   var distance = max(sqrt(dx * dx + dy * dy), 1);
   var modifier = 2.0 + random(1.0);
-  var damage = ceil((global_enemy.energy / 2) * modifier / distance);
+  var damage = ceil((enemy.energy / 2) * modifier / distance);
 
   var queue_index = array_length(global.queue);
 
-  // Purge stale data and refresh
-  obj_controller_player._data = undefined;
-  obj_controller_player._data = {
+  // Create attack metadata
+  var data = {
     lx : lx,
     ly : ly,
-    energy : global_enemy.energy,
-    idx : e.index,
+    energy : enemy.energy,
+    idx : enemy_index,
     px : px,
     py : py,
     difficulty : global.game.difficulty,
     damage : damage,
     base_index : queue_index,
     current_enemy : i,
-    attack_count : array_length(targets),
+    attack_count : len,
     i : i,
-    post : post,
+    post : post
   };
 
-  // Refill attack arrays and reserve space for following queue slots
-  player.attack_buffer[queue_index] = obj_controller_player._data;
-  player.attack_indexes[queue_index] = queue_index;
+  obj_controller_player._data = data;
+
+  // Fill queue index buffers
+  player.attack_buffer[queue_index] = data;
+  player.attack_indexes[queue_index + 0] = queue_index;
   player.attack_indexes[queue_index + 1] = queue_index;
   player.attack_indexes[queue_index + 2] = queue_index;
   player.attack_indexes[queue_index + 3] = queue_index;
-  if (i < array_length(targets) - 1) {
+  if (i < len - 1) {
     player.attack_indexes[queue_index + 4] = queue_index;
   }
 
-  show_debug_message("Enemy " + string(e.index) + " at [" + string(lx) + "," +
-                     string(ly) + "] attacking player at [" + string(px) + "," +
-                     string(py) + "] | Distance: " + string(distance) +
-                     " | Energy: " + string(global_enemy.energy) +
+  show_debug_message("Enemy " + string(enemy_index) + " at [" + string(lx) + "," + string(ly) +
+                     "] attacking player at [" + string(px) + "," + string(py) +
+                     "] | Distance: " + string(distance) +
+                     " | Energy: " + string(enemy.energy) +
                      " | Modifier: " + string(modifier) +
                      " | Damage: " + string(damage));
 
-  // Queue attack -- 1-based to be user friendly
-  array_push(
-      global.queue, function() {
-        var idx = obj_controller_player.attack_indexes[global.index];
-        var data = obj_controller_player.attack_buffer[idx];
-        // Add 1 to lx and ly for user display
-        return immediate_dialog(
-            Speaker.Sulu, "battle.enemyfiring", noone,
-            {coord : string(data.lx + 1) + "," + string(data.ly + 1)});
+  // Queue attack dialog
+  array_push(global.queue, function() {
+    var idx = obj_controller_player.attack_indexes[global.index];
+    var data = obj_controller_player.attack_buffer[idx];
+    return immediate_dialog(
+      Speaker.Sulu,
+      "battle.enemyfiring",
+      noone,
+      {coord: string(data.lx + 1) + "," + string(data.ly + 1)}
+    );
+  });
+
+  // Queue visual effect
+  array_push(global.queue, function() {
+    var idx = obj_controller_player.attack_indexes[global.index];
+    var data = obj_controller_player.attack_buffer[idx];
+    var enemy = global.allenemies[data.idx];
+
+    if (is_struct(enemy)) {
+      // Face player
+      if (enemy.lx != data.px || enemy.ly != data.py) {
+        var dx = data.px - enemy.lx;
+        var dy = data.py - enemy.ly;
+        enemy.dir = abs(dx) >= abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+      }
+
+      audio_play_sound(snd_enemy_phaser, 0, false);
+      var p = instance_create_layer(0, 0, "Overlay", obj_phaser);
+      p.x1 = data.lx;
+      p.y1 = data.ly;
+      p.x2 = data.px;
+      p.y2 = data.py;
+      p.type = 2;
+      p.duration = 40;
+    }
+
+    return {delay: 40};
+  });
+
+  // Queue damage application
+  array_push(global.queue, function() {
+    var idx = obj_controller_player.attack_indexes[global.index];
+    var data = obj_controller_player.attack_buffer[idx];
+    var keys = variable_struct_get_names(global.ent.system);
+
+    if (data.damage < 1) {
+      return immediate_dialog(Speaker.Sulu, "battle.evade");
+    }
+
+    // Damage shields
+    global.ent.shields -= round(data.damage);
+    show_debug_message("Player hit for " + string(round(data.damage)) + " damage!");
+
+    damage_random_systems(round(data.damage / (10 - data.difficulty)));
+
+    // Update general damage
+    global.ent.generaldamage = 0;
+    for (var j = 0; j < array_length(keys); j++) {
+      var val = global.ent.system[$ keys[j]];
+      if (val < 90 && global.ent.generaldamage < 1) global.ent.generaldamage = 1;
+      if (val < 66 && global.ent.generaldamage < 2) global.ent.generaldamage = 2;
+      if (val < 33 && global.ent.generaldamage < 3) global.ent.generaldamage = 3;
+    }
+
+    // Drain enemy energy
+    var enemy = global.allenemies[data.idx];
+    if (is_struct(enemy)) {
+      var emod = max(1.1, 3.0 + random(1.0));
+      enemy.energy = max(round(enemy.energy / emod), 0);
+    }
+
+    // Check for destruction
+    if (global.ent.shields < 0) {
+      global.ent.condition = Condition.Destroyed;
+      global.busy = true;
+      array_resize(global.queue, global.index);
+
+      array_push(global.queue, function() {
+        return [immediate_dialog(Speaker.Spock, "redalert.shieldsdown")[0]];
+      });
+      array_push(global.queue, function() {
+        dialog_condition();
+        return undefined;
       });
 
-  // Queue effects -- enemy faces player, creates disruptor beam
-  array_push(
-      global.queue, function() {
-        var idx = obj_controller_player.attack_indexes[global.index];
-        var data = obj_controller_player.attack_buffer[idx];
-        var enemy = global.allenemies[data.idx];
+      return undefined;
+    }
 
-        if (enemy != undefined && is_struct(enemy)) {
-          if (enemy.lx == data.px && enemy.ly == data.py) {
-            enemy.dir = enemy.dir;
-          } else {
-            var dx = data.px - enemy.lx;
-            var dy = data.py - enemy.ly;
-            var dir;
-            if (abs(dx) >= abs(dy)) {
-              dir = dx > 0 ? 1 : 3;
-            } else {
-              dir = dy > 0 ? 2 : 0;
-            }
-            enemy.dir = dir;
-          }
-        }
+    // If player survived, queue reaction dialog
+    return dialog_disruptorhit(data.damage);
+  });
 
-        audio_play_sound(snd_enemy_phaser, 0, false);
-        var p = instance_create_layer(0, 0, "Overlay", obj_phaser);
-        p.x1 = data.lx;
-        p.y1 = data.ly;
-        p.x2 = data.px;
-        p.y2 = data.py;
-        p.type = 2;
-        p.duration = 40;
-        return {delay : 40};
-      });
+  // Queue next attack
+  array_push(global.queue, function() {
+    var data = obj_controller_player._data;
+    queue_next_enemy_attack(data.i + 1, data.post);
+  });
 
-  // Calculate damages and queue crew dialog
-  array_push(
-      global.queue, function() {
-        var idx = obj_controller_player.attack_indexes[global.index];
-        var data = obj_controller_player.attack_buffer[idx];
-        var keys = variable_struct_get_names(global.ent.system);
-
-        if (data.damage < 1) {
-          return immediate_dialog(Speaker.Sulu, "battle.evade");
-        }
-
-        // Player loses shields
-        global.ent.shields -= round(data.damage);
-        show_debug_message("Player was hit for " + string(round(data.damage)) +
-                           " units of damage!");
-        damage_random_systems(round(data.damage / (10 - data.difficulty)));
-
-        // Update general damage
-        global.ent.generaldamage = 0;
-        for (var j = 0; j < array_length(keys); j++) {
-          var val = global.ent.system[$ keys[j]];
-          if (val < 90 && global.ent.generaldamage < 1)
-            global.ent.generaldamage = 1;
-          if (val < 66 && global.ent.generaldamage < 2)
-            global.ent.generaldamage = 2;
-          if (val < 33 && global.ent.generaldamage < 3)
-            global.ent.generaldamage = 3;
-        }
-
-        // Enemy used energy to attack, deduct it
-        var emodifier = max(1.1, 3.0 + random(1.0));
-        if (is_struct(global.allenemies[data.idx])) {
-          global.allenemies[data.idx].energy =
-              max(round(global.allenemies[data.idx].energy / emodifier), 0);
-        }
-
-        // If player was destroyed, halt queue and immediately begin
-        // gameover sequence
-        if (global.ent.shields < 0) {
-          global.ent.condition = Condition.Destroyed;
-          global.busy = true;
-          array_resize(global.queue, global.index);
-          array_push(
-              global.queue, function() {
-                return [immediate_dialog(Speaker.Spock,
-                                         "redalert.shieldsdown")[0]];
-              });
-          array_push(
-              global.queue, function() {
-                dialog_condition();
-                return undefined;
-              });
-          return undefined;
-        }
-
-        // Return dialogs
-        return dialog_disruptorhit(data.damage);
-      });
-
-  // Queue the next enemy attack
-  array_push(
-      global.queue, function() {
-        var idx = obj_controller_player.attack_indexes[global.index];
-        var data = obj_controller_player._data;
-        queue_next_enemy_attack(data.i + 1, data.post);
-      });
-
-  // Queue a delay if more attacks follow
-  if (i < array_length(targets) - 1) {
-    array_push(global.queue, function() { return {delay : 40}; });
+  // Delay between attacks
+  if (i < len - 1) {
+    array_push(global.queue, function() { return {delay: 40}; });
   }
 }
 
 /// @description: Begins the player's phaser attack sequence
 function player_phaser_attack() {
   global.busy = true;
+
   var player = instance_find(obj_controller_player, 0);
+  if (!player) return;
+
   player._data = undefined;
-  player.attack_targets = [];
   player.attack_buffer = [];
-  player.destroyed_count = 0;
-
-  // Copy enemies at the time of the attack start
-  var len = array_length(player.local_enemies);
-  player.attack_targets = array_create(len, undefined);
-
-  // Copy from source into destination
-  array_copy(player.attack_targets, 0, player.local_enemies, 0, len);
   player.attack_index = 0;
-
-  player.attack_buffer = [];
   player.destroyed_count = 0;
 
-  // Calculate phaser allotment per enemy
-  var total_targets = array_length(obj_controller_player.attack_targets);
+  // Use local_enemies directly as the attack list
+  var total_targets = array_length(player.local_enemies);
   var total_phasers = global.ent.phasers;
   var per_enemy_phasers = round(total_phasers / total_targets);
 
@@ -305,151 +271,147 @@ function player_phaser_attack() {
   player.attack_difficulty = global.game.difficulty;
 
   show_debug_message("[STARTING PLAYER ATTACK SEQUENCE]");
-  show_debug_message("Player allotted " + string(total_phasers) +
-                     " energy to phasers.");
-  show_debug_message("Calculated " + string(per_enemy_phasers) +
-                     " phasers per enemy.");
+  show_debug_message("Player allotted " + string(total_phasers) + " energy to phasers.");
+  show_debug_message("Calculated " + string(per_enemy_phasers) + " phasers per enemy.");
 
-  // Start first attack
+  // Start attack sequence
   queue_next_attack(0);
 }
 
 /// @description: Recursive function to queue a player phaser attack for an enemy
-/// @param {real} i: Index in attack_targets to process
+/// @param {real} i: Index in local_enemies to process
 function queue_next_attack(i) {
-  var targets = obj_controller_player.attack_targets;
+  var player = obj_controller_player;
+  if (!player) return;
 
-  // Check if we're finished with the sequence
-  if (i >= array_length(targets)) {
-    obj_controller_player._data = undefined;
-    obj_controller_player.destroyed_count = 0;
-    array_push(
-        global.queue, function() {
-          show_debug_message("[PLAYER ATTACK SEQUENCE RESOLVED]");
-          if (array_length(obj_controller_player.local_enemies) > 0) {
-            enemy_attack();
+  var targets = player.local_enemies;
+  var len = array_length(targets);
+
+  // Check if finished sequence
+  if (i >= len) {
+    player._data = undefined;
+    player.destroyed_count = 0;
+
+    array_push(global.queue, function() {
+      show_debug_message("[PLAYER ATTACK SEQUENCE RESOLVED]");
+      var valid_enemy_count = 0;
+      for (var i = 0; i < array_length(obj_controller_player.local_enemies); i++) {
+        var idx = obj_controller_player.local_enemies[i];
+        if (idx != undefined && idx >= 0 && idx < array_length(global.allenemies)) {
+          var enemy = global.allenemies[idx];
+          if (is_struct(enemy) && enemy.energy > 0) {
+            valid_enemy_count++;
           }
-        });
+        }
+      }
+
+      if (valid_enemy_count > 0) {
+        enemy_attack();
+      } else {
+        get_sector_data();
+      }
+    });
+
     return;
   }
 
-  // Capture the enemy to target
-  var e = targets[i];
+  var enemy_index = targets[i];
 
-  // Check if still valid
-  var len = array_length(global.allenemies);
-  if (!is_struct(e) || e.index < 0 || e.index >= len || 
-  !is_struct(global.allenemies[e.index]) || global.allenemies[e.index].energy <= 0) {
-      show_debug_message("Warning: Skipping invalid enemy at index " + string(e.index));
-      queue_next_attack(i + 1);
-      return;
+  // Validate enemy index
+  if (!is_numeric(enemy_index) || enemy_index < 0 || enemy_index >= array_length(global.allenemies)) {
+    show_debug_message("Warning: Skipping invalid enemy index " + string(enemy_index));
+    queue_next_attack(i + 1);
+    return;
   }
 
-  // Calculate attack details
+  var enemy = global.allenemies[enemy_index];
+
+  if (!is_struct(enemy) || enemy.energy <= 0) {
+    show_debug_message("Warning: Skipping dead enemy at index " + string(enemy_index));
+    queue_next_attack(i + 1);
+    return;
+  }
+
+  // Player and enemy coords
   var px = global.ent.lx;
   var py = global.ent.ly;
-  var dx = abs(px - e.lx);
-  var dy = abs(py - e.ly);
+  var lx = enemy.lx;
+  var ly = enemy.ly;
+
+  var dx = abs(px - lx);
+  var dy = abs(py - ly);
   var distance = max(sqrt(dx * dx + dy * dy), 1);
   var modifier = min(2.5 + random(1.0), 3.5);
-  var damage = ceil(obj_controller_player.attack_phasers * modifier / distance);
-  var current_energy = global.allenemies[e.index].energy;
+  var damage = ceil(player.attack_phasers * modifier / distance);
+  var current_energy = enemy.energy;
 
-  // Capture data for queue closure
-  obj_controller_player._data = {
-    px : px,
-    py : py,
-    lx : e.lx,
-    ly : e.ly,
-    idx : e.index,
-    difficulty : obj_controller_player.attack_difficulty,
-    damage : damage,
-    energy : current_energy,
-    i : i
+  // Prepare attack data
+  var data = {
+    px: px,
+    py: py,
+    lx: lx,
+    ly: ly,
+    idx: enemy_index,
+    difficulty: player.attack_difficulty,
+    damage: damage,
+    energy: current_energy,
+    i: i
   };
 
-  obj_controller_player.attack_buffer[i] = obj_controller_player._data;
+  player._data = data;
+  player.attack_buffer[i] = data;
 
   // Visual effect
-  array_push(
-      global.queue, function() {
-        audio_play_sound(snd_player_phaser, 0, false);
-        var p = instance_create_layer(0, 0, "Overlay", obj_phaser);
-        var px = obj_controller_player._data.px,
-            py = obj_controller_player._data.py;
-        var lx = obj_controller_player._data.lx,
-            ly = obj_controller_player._data.ly;
-        p.x1 = px;
-        p.y1 = py;
-        p.x2 = lx;
-        p.y2 = ly;
-        p.type = 1;
-        p.duration = 40;
-        return {delay : 40};
-      });
+  array_push(global.queue, function() {
+    audio_play_sound(snd_player_phaser, 0, false);
+    var p = instance_create_layer(0, 0, "Overlay", obj_phaser);
+    p.x1 = obj_controller_player._data.px;
+    p.y1 = obj_controller_player._data.py;
+    p.x2 = obj_controller_player._data.lx;
+    p.y2 = obj_controller_player._data.ly;
+    p.type = 1;
+    p.duration = 40;
+    return {delay: 40};
+  });
 
   // Damage and dialog
-  array_push(
-      global.queue, function() {
-        var current_energy = obj_controller_player._data.energy;
-        var damage = obj_controller_player._data.damage;
-        var px = obj_controller_player._data.px,
-            py = obj_controller_player._data.py;
-        var lx = obj_controller_player._data.lx,
-            ly = obj_controller_player._data.ly;
-        var idx = obj_controller_player._data.idx;
+  array_push(global.queue, function() {
+    var data = obj_controller_player._data;
+    var idx = data.idx;
 
-        // Validate enemy index
-        if (idx < 0 || idx >= array_length(global.allenemies) || !is_struct(global.allenemies[idx])) {
-          show_debug_message("Warning: Enemy index " + string(idx) + " invalid during damage phase!");
-          return [];
-        }
+    if (idx < 0 || idx >= array_length(global.allenemies) || !is_struct(global.allenemies[idx])) {
+      show_debug_message("Warning: Enemy index " + string(idx) + " invalid during damage phase!");
+      return [];
+    }
 
-        // Adjust index
-        var new_idx = -1;
-        for (var k = 0; k < array_length(global.allenemies); k++) {
-          if (is_struct(global.allenemies[k]) &&
-             global.allenemies[k].lx == lx &&
-             global.allenemies[k].ly == ly &&
-             global.allenemies[k].sx == global.ent.sx &&
-             global.allenemies[k].sy == global.ent.sy) {
-             new_idx = k;
-             break;
-         }
-       }
-       
-       if (new_idx == -1) {
-          show_debug_message("Error: No enemy found at [" + string(lx) + "," + string(ly) + "]!");
-          return [];
-       }
+    var enemy = global.allenemies[idx];
 
-        // Apply damage
-        var new_energy = max(current_energy - damage, 0);
-        global.allenemies[new_idx].energy = new_energy;
+    // Apply damage
+    var new_energy = max(enemy.energy - data.damage, 0);
+    enemy.energy = new_energy;
 
-        show_debug_message("Firing on enemy index " + string(new_idx) +
-                           " at [" + string(lx) + "," + string(ly) + "].");
-        show_debug_message("Calculated " + string(damage) +
-                           " damage. Enemy energy now " + string(new_energy) +
-                           " down from " + string(current_energy) + ".");
+    show_debug_message("Firing on enemy index " + string(idx) + 
+                       " at [" + string(data.lx) + "," + string(data.ly) + "].");
+    show_debug_message("Calculated " + string(data.damage) + 
+                       " damage. Enemy energy now " + string(new_energy) + 
+                       " down from " + string(data.energy) + ".");
 
-        // Return dialog
-        return dialog_phaserhit(damage, current_energy, new_energy, lx, ly, new_idx);
-      });
+    return dialog_phaserhit(data.damage, data.energy, new_energy, data.lx, data.ly, idx);
+  });
 
-  // Next attack
-  array_push(
-      global.queue, function() {
-        var i = obj_controller_player._data.i;
-        obj_controller_player._data = undefined;
-        queue_next_attack(i + 1);
-      });
+  // Queue next attack
+  array_push(global.queue, function() {
+    var data = obj_controller_player._data;
+    obj_controller_player._data = undefined;
+    queue_next_attack(data.i + 1);
+  });
 }
 
 /// @description: Removes an enemy from the galaxy, creates explosion effect,
 /// and queues dialog
 /// @param {real} idx: Enemy index in global.allenemies
 function destroy_enemy(idx) {
+  // Validate index
   if (idx < 0 || idx >= array_length(global.allenemies) ||
       is_undefined(global.allenemies[idx]) ||
       !is_struct(global.allenemies[idx])) {
@@ -459,31 +421,31 @@ function destroy_enemy(idx) {
 
   var e = global.allenemies[idx];
 
-  // Create explosion effect
+  // Explosion effects
   audio_play_sound(snd_explosionsmall, 0, false);
-  var ex = instance_create_layer(0, 0, "Overlay", obj_explosion,
-                                 {lx : e.lx, ly : e.ly});
+  instance_create_layer(0, 0, "Overlay", obj_explosion, { lx: e.lx, ly: e.ly });
   particle_explosion(e.lx, e.ly);
 
-  // Instead of deleting and shifting, mark the enemy as undefined
+  // Mark enemy as removed instead of deleting to keep index stable
   global.allenemies[idx] = undefined;
 
+  // Update global counters
   global.game.totalenemies = max(global.game.totalenemies - 1, 0);
 
-  // Update local sector's enemy count
+  // Update sector data
   var sx = e.sx;
   var sy = e.sy;
   var sector = global.galaxy[sx][sy];
   sector.enemynum = max(sector.enemynum - 1, 0);
-  array_push(sector.available_cells, [ e.lx, e.ly ]);
+  array_push(sector.available_cells, [e.lx, e.ly]);
 
-  show_debug_message("Enemy at [" + string(e.lx) + "," + string(e.ly) +
-                     "] destroyed!");
+  show_debug_message("Enemy at [" + string(e.lx) + "," + string(e.ly) + "] destroyed!");
 
-  // Update local_objects if in player's sector
+  // Update player local arrays if in current sector
   if (sx == global.ent.sx && sy == global.ent.sy) {
     var player = instance_find(obj_controller_player, 0);
     if (player) {
+      // Remove enemy references by setting entries to undefined
       for (var i = array_length(player.local_objects) - 1; i >= 0; i--) {
         var obj = player.local_objects[i];
         if (is_struct(obj) && obj.type == "enemy" && obj.index == idx) {
@@ -491,41 +453,35 @@ function destroy_enemy(idx) {
         }
       }
       for (var i = array_length(player.local_enemies) - 1; i >= 0; i--) {
-        var obj = player.local_enemies[i];
-        if (is_struct(obj) && obj.index == idx) {
+        if (player.local_enemies[i] == idx) {
           player.local_enemies[i] = undefined;
         }
       }
     }
   }
 
-  // No other ships
+  // Queue dialog if last enemy in sector
   if (sector.enemynum < 1) {
     global.busy = true;
-    array_push(global.queue, function() { return {delay : 60}; });
+    array_push(global.queue, function() { return { delay: 60 }; });
     queue_dialog(Speaker.Spock, "weapons.lastone", vo_spock_noships);
   }
 
-  // Check if player won
+  // Check if player won (no enemies left in galaxy)
   if (global.game.totalenemies <= 0) {
     global.busy = true;
     array_resize(global.queue, global.index);
-    array_push(
-        global.queue,
-        function() { return immediate_dialog(Speaker.Uhura, "condition.win1"); });
-    array_push(
-        global.queue, function() {
-          return immediate_dialog(Speaker.Kirk, "condition.win2",
-                                  vo_kirk_onscreen);
-        });
-    array_push(
-        global.queue, function() {
-          global.ent.condition = Condition.Win;
-          global.busy = true;
-          winlose();
-          return undefined;
-        });
-  } else {
-    get_sector_data();
+    array_push(global.queue, function() {
+      return immediate_dialog(Speaker.Uhura, "condition.win1");
+    });
+    array_push(global.queue, function() {
+      return immediate_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
+    });
+    array_push(global.queue, function() {
+      global.ent.condition = Condition.Win;
+      global.busy = true;
+      winlose();
+      return undefined;
+    });
   }
 }

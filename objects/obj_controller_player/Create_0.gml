@@ -32,11 +32,14 @@ torp_cy = -1;
 
 // Local sector data
 local_objects = [];
-local_enemies = [];
 local_stars = [];
 local_bases = [];
+
+// Dynamic sector data
+// Local enemies is populated on each call to get_sector_data and is an array of indexes for global.allenemies[i]
+// Attack buffer stores data for those enemies during attack sequences for damage calculation
+local_enemies = [];
 attack_buffer = [];
-attack_indexes = [];
 
 enum Reports {
   Damage,
