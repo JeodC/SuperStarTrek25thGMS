@@ -354,9 +354,6 @@ function place_player(all_occupied_cells) {
     var sy = valid_sectors[i][1];
     var sector = global.galaxy[sx][sy];
 
-    // Create ds_map for available_cells
-    var available_map = create_coord_map(sector.available_cells);
-
     // Precompute valid cells with 3 neighbors
     var valid_cells = [];
     for (var j = 0; j < array_length(sector.available_cells); j++) {
@@ -366,7 +363,6 @@ function place_player(all_occupied_cells) {
         array_push(valid_cells, [ lx, ly ]);
       }
     }
-    ds_map_destroy(available_map);
 
     if (array_length(valid_cells) == 0)
       continue;

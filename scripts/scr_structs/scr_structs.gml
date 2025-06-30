@@ -1,8 +1,7 @@
 ///@description: Struct for default Game values
 function Game() {
   return {
-    difficulty : 1, // Struct difficulty separate from global to maintain
-                    // ongoing session difficulty
+    difficulty : 1, // Active session difficulty
     maxenergy : 3000,
     maxtorpedoes : 10,
     enemypower : 0,

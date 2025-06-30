@@ -158,11 +158,10 @@ function advancetime(days) {
 
   // If time has expired, handle loss
   if (daysleft < 1) {
-    array_push(
-        global.queue, function() {
-          dialog_condition();
-          return undefined;
-        });
+    array_push(global.queue, function() {
+      dialog_condition();
+      return undefined;
+    });
   }
 }
 
