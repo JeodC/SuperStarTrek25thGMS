@@ -32,8 +32,8 @@ function queue_next_enemy_attack(i, post) {
     array_push(global.queue, function() {
       var data = obj_controller_player._data;
       cleanup_sequence();
-      show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
       global.inputmode.mode = global.inputmode.tmp_old;
+      show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
 
       // Process post-attack warp or impulse moves
       if (is_struct(data) && global.ent.condition != Condition.Destroyed) {
@@ -50,10 +50,8 @@ function queue_next_enemy_attack(i, post) {
       return {delay : 10};
     });
 
+    // Reset global queue
     array_push(global.queue, function() {
-      obj_controller_player.attack_buffer = [];
-      obj_controller_player.attack_indexes = [];
-      obj_controller_player._data = undefined;
       global.queue = [];
       global.index = 0;
       global.busy = false;
@@ -87,7 +85,7 @@ function queue_next_enemy_attack(i, post) {
 
   var dx = abs(px - lx);
   var dy = abs(py - ly);
-  var distance = max(sqrt(dx * dx + dy * dy), 1);
+  var distance = max(point_distance(px, py, lx, ly), 1);
   var modifier = 2.0 + random(1.0);
   var damage = ceil((enemy.energy / 2) * modifier / distance);
 
@@ -112,14 +110,15 @@ function queue_next_enemy_attack(i, post) {
 
   obj_controller_player._data = data;
 
-  // Fill queue index buffers
-  player.attack_buffer[queue_index] = data;
-  player.attack_indexes[queue_index + 0] = queue_index;
-  player.attack_indexes[queue_index + 1] = queue_index;
-  player.attack_indexes[queue_index + 2] = queue_index;
-  player.attack_indexes[queue_index + 3] = queue_index;
+  // Reserve multiple queue slots for the different phases of this enemy's attack sequence
+  // Each slot corresponds to a queued function that handles a specific step in the attack process
+  player.attack_buffer[queue_index] = data; // Store attack data in the player's attack buffer at the appropriate index
+  player.attack_indexes[queue_index + 0] = queue_index; // Attack dialog
+  player.attack_indexes[queue_index + 1] = queue_index; // Visual effect
+  player.attack_indexes[queue_index + 2] = queue_index; // Damage application/dialog
+  player.attack_indexes[queue_index + 3] = queue_index; // Queue next enemy (recursive continuation)
   if (i < len - 1) {
-    player.attack_indexes[queue_index + 4] = queue_index;
+    player.attack_indexes[queue_index + 4] = queue_index; // Delay between attacks (if not last enemy)
   }
 
   show_debug_message("Enemy " + string(enemy_index) + " at [" + string(lx) + "," + string(ly) +
@@ -238,11 +237,11 @@ function player_phaser_attack() {
   global.busy = true;
 
   var player = instance_find(obj_controller_player, 0);
-  if (!player) return;
   
   // Validate enemies
   validate_enemies();
 
+  // Sanitize
   player._data = undefined;
   player.attack_buffer = [];
   player.attack_index = 0;
@@ -263,7 +262,7 @@ function player_phaser_attack() {
   show_debug_message("Player allotted " + string(total_phasers) + " energy to phasers.");
   show_debug_message("Calculated " + string(per_enemy_phasers) + " phasers per enemy.");
 
-  // Start attack sequence
+  // Start attack sequence, starting at index 0
   queue_next_attack(0);
 }
 
@@ -271,7 +270,6 @@ function player_phaser_attack() {
 /// @param {real} i: Index in local_enemies to process
 function queue_next_attack(i) {
   var player = obj_controller_player;
-  if (!player) return;
 
   var targets = player.local_enemies;
   var len = array_length(targets);
@@ -284,6 +282,8 @@ function queue_next_attack(i) {
     array_push(global.queue, function() {
       cleanup_sequence();
       show_debug_message("[PLAYER ATTACK SEQUENCE RESOLVED]");
+      
+      // Enemies get to counterattack
       if (array_length(obj_controller_player.local_enemies) > 0) {
         enemy_attack();
       }
@@ -292,6 +292,7 @@ function queue_next_attack(i) {
     return;
   }
 
+  // Pull enemy data
   var enemy_index = targets[i];
   var enemy = global.allenemies[enemy_index];
 
@@ -303,7 +304,7 @@ function queue_next_attack(i) {
 
   var dx = abs(px - lx);
   var dy = abs(py - ly);
-  var distance = max(sqrt(dx * dx + dy * dy), 1);
+  var distance = max(point_distance(px, py, lx, ly), 1);
   var modifier = min(2.5 + random(1.0), 3.5);
   var damage = ceil(player.attack_phasers * modifier / distance);
   var current_energy = enemy.energy;
@@ -322,7 +323,6 @@ function queue_next_attack(i) {
   };
 
   player._data = data;
-  player.attack_buffer[i] = data;
 
   // Visual effect
   array_push(global.queue, function() {
@@ -406,6 +406,8 @@ function destroy_enemy(idx) {
   show_debug_message("Enemy at [" + string(e.lx) + "," + string(e.ly) + "] destroyed!");
 
   // Update player local arrays if in current sector
+  // Unlike validate_enemies, this preserves the array indices so enemy counterattacks don't run into off-by-one errors
+  // during enemy counterattack recursion (e.g. queue_next_enemy_attack)
   if (sx == global.ent.sx && sy == global.ent.sy) {
     var player = instance_find(obj_controller_player, 0);
     if (player) {
@@ -433,38 +435,26 @@ function destroy_enemy(idx) {
   }
 }
 
-/// @description: Validates enemies in local sector
+/// @description: Rebuilds player.local_enemies array with valid enemies
+/// This is called at the start of the player attack sequence
+/// and during the cleanup sequence
 function validate_enemies() {
   var player = obj_controller_player;
-  var valid = [];
-  var removed_count = 0;
 
-  for (var i = 0; i < array_length(player.local_enemies); i++) {
-    var idx = player.local_enemies[i];
-    
-    if (!is_numeric(idx)) {
-      continue;
-    }
-    if (idx < 0 || idx >= array_length(global.allenemies)) {
-      continue;
-    }
+  player.local_enemies = array_filter(player.local_enemies, function(idx) {
+    if (!is_numeric(idx)) return false;
+    if (idx < 0 || idx >= array_length(global.allenemies)) return false;
 
     var e = global.allenemies[idx];
-    if (!is_struct(e)) {
-      continue;
-    }
-    if (e.energy <= 0) {
-      continue;
-    }
-    
-    // Passed all checks, keep enemy
-    array_push(valid, idx);
-  }
+    if (!is_struct(e)) return false;
+    if (e.energy <= 0) return false;
 
-  player.local_enemies = valid;
+    return true;
+  });
 }
 
 /// @description: Clean up player local enemy references and refresh data
+/// Called at the end of attack sequences
 function cleanup_sequence() {
 
   // Refresh local sector data
@@ -481,9 +471,6 @@ function cleanup_sequence() {
     player._data = undefined;
     player.attack_index = 0;
   }
-  
-  show_debug_message("[CLEANUP SEQUENCE CALLED]");
-  show_debug_message("- Current local enemies after cleanup: " + string(player.local_enemies));
 }
 
 /// @description: Checks if the player won
