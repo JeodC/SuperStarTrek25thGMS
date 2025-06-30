@@ -1,15 +1,3 @@
-credits_initialized = false;
-credits_lines = [];  // Reset array
-credits_index = 1;   // Start at 1
-ctimer = 0;          // Add first line immediately
-tx = 160;            // Center x position
-credits_speed = 0.3; // Scroll speed (pixels per frame)
-next_credit_y = room_height + 50;
-credits_y_end = -50;      // Y position to remove lines (off top)
-credits_end_timer = 60;   // Frames to wait after last credit
-credits_finished = false; // Track completion
-stats_added = false;      // Track whether stats have been added
-
 /// @description: Get difficulty string for display
 function get_diff_text(diff_num) {
   switch (diff_num) {
@@ -42,12 +30,12 @@ function init_animation_by_state() {
     break;
 
   case State.Credits:
+    init_credits();
     sprite_index = spr_bg_stars;
     ctimer = 10; // Faster credits timer
     break;
 
   default:
-    // Optional: set defaults or do nothing
     break;
   }
 }
@@ -105,4 +93,19 @@ function init_movie() {
   handle_warp_mode();
 }
 
+/// @description: Initializes credits variables
+function init_credits() {
+credits_lines = [];  // Reset array
+credits_index = 1;   // Start at 1
+ctimer = 0;          // Add first line immediately
+tx = 160;            // Center x position
+credits_speed = 0.3; // Scroll speed (pixels per frame)
+next_credit_y = room_height + 50;
+credits_y_end = -50;      // Y position to remove lines (off top)
+credits_end_timer = 60;   // Frames to wait after last credit
+credits_finished = false; // Track completion
+stats_added = false;      // Track whether stats have been added
+}
+
+credits_initialized = false;
 init_movie();

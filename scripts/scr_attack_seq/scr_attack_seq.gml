@@ -374,6 +374,7 @@ function queue_next_attack(i) {
 /// and queues dialog
 /// @param {real} idx: Enemy index in global.allenemies
 function destroy_enemy(idx) {
+  
   // Validate index
   if (idx < 0 || idx >= array_length(global.allenemies) ||
       is_undefined(global.allenemies[idx]) ||
@@ -428,22 +429,7 @@ function destroy_enemy(idx) {
     global.busy = true;
     array_push(global.queue, function() { return { delay: 60 }; });
     queue_dialog(Speaker.Spock, "weapons.lastone", vo_spock_noships);
-  }
-
-  // Check if player won (no enemies left in galaxy)
-  if (global.game.totalenemies <= 0) {
-    global.busy = true;
-    array_resize(global.queue, global.index);
-    array_push(global.queue, function() {
-      queue_dialog(Speaker.Uhura, "condition.win1");
-      queue_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
-    });
-    array_push(global.queue, function() {
-      global.ent.condition = Condition.Win;
-      global.busy = true;
-      winlose();
-      return undefined;
-    });
+    check_win();
   }
 }
 
@@ -498,4 +484,18 @@ function cleanup_sequence() {
   
   show_debug_message("[CLEANUP SEQUENCE CALLED]");
   show_debug_message("- Current local enemies after cleanup: " + string(player.local_enemies));
+}
+
+/// @description: Checks if the player won
+function check_win() {
+  // Check if player won (no enemies left in galaxy)
+  if (global.game.totalenemies <= 0) {
+    queue_dialog(Speaker.Uhura, "condition.win1");
+    queue_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
+    array_push(global.queue, function() { return {delay: 20}; });
+    array_push(global.queue, function() {
+      global.ent.condition = Condition.Win;
+      winlose();
+    });
+  }
 }

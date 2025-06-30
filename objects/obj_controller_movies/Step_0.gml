@@ -31,14 +31,13 @@ if (input_any()) {
     end_movie();
     global.game.state = State.Credits;
     room_goto(rm_endgame);
-    reset_game();
     return;
   }
 }
 
 // --- Warp animation finished (no loop, ends when audio stops)
 if (sprite_index == spr_anim_warp && !audio_is_playing(mus_warp) &&
-    global.game.state == State.Playing) {
+  global.game.state == State.Playing) {
   end_movie();
   return;
 }
@@ -83,11 +82,9 @@ if (sprite_index == spr_anim_destroyed && image_index >= image_number - 1) {
 }
 
 // -- Credits logic
-if (room == rm_endgame && global.game.state == State.Credits &&
-    !credits_initialized) {
+if (room == rm_endgame && global.game.state == State.Credits && !credits_initialized) {
   update_movie_animation();
-} else if (room == rm_endgame && sprite_index == spr_anim_warp &&
-           credits_initialized) {
+} else if (room == rm_endgame && sprite_index == spr_anim_warp && credits_initialized) {
   image_index = 106;
 }
 
@@ -123,7 +120,7 @@ if (credits_initialized) {
 }
 
 /// @description Initialize credits (music and variables)
-function init_credits() {
+function roll_credits() {
   if (!credits_initialized) {
     audio_play_sound(mus_credits, 0, false);
     credits_lines = []; // Reset array
@@ -141,9 +138,9 @@ function update_movie_animation() {
     image_speed = 0.5;
   } else if (sprite_index == spr_anim_warp && image_index > 106) {
     image_index = 106;
-    init_credits();
+    roll_credits();
   } else if (sprite_index == spr_bg_stars) {
-    init_credits();
+    roll_credits();
   }
 }
 
@@ -276,6 +273,7 @@ function handle_credits_input() {
     global.inputmode.mode = InputMode.UI;
     obj_controller_ui.from_credits = true;
     room_goto(rm_title);
+    reset_game();
   }
 }
 

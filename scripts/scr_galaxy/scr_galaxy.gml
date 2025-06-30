@@ -459,8 +459,7 @@ function generate_galaxy() {
   }
 
   // Place enemies, starbases, stars, player
-  enemy_count =
-      place_enemies(enemy_count, global.game.initenemies, all_occupied_cells);
+  enemy_count = place_enemies(enemy_count, global.game.initenemies, all_occupied_cells);
   global.game.totalenemies = enemy_count;
 
   if (enemy_count != global.game.initenemies) {
