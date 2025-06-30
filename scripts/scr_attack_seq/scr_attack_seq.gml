@@ -10,25 +10,10 @@ function enemy_attack(post = undefined) {
   global.inputmode.tmp_old = global.inputmode.mode;
 
   // Filter out invalid or destroyed enemies in-place
-  var valid_enemies = [];
-  var len = array_length(player.local_enemies);
-  for (var i = 0; i < len; i++) {
-    var index = player.local_enemies[i];
-    if (is_numeric(index) && index >= 0 && index < array_length(global.allenemies)) {
-      var e = global.allenemies[index];
-      if (is_struct(e) && e.energy > 0) {
-        array_push(valid_enemies, index);
-      }
-    }
-  }
-
-  player.local_enemies = valid_enemies;
-  player.attack_index = 0;
-  player.attack_buffer = [];
-  player.attack_indexes = [];
+  cleanup_sequence();
 
   show_debug_message("[STARTING ENEMY ATTACK SEQUENCE]");
-  show_debug_message("Found " + string(array_length(valid_enemies)) + " valid enemies to attack.");
+  show_debug_message("Found " + string(array_length(player.local_enemies)) + " valid enemies to attack.");
 
   queue_next_enemy_attack(0, post);
 }
@@ -46,10 +31,11 @@ function queue_next_enemy_attack(i, post) {
   if (i >= len) {
     array_push(global.queue, function() {
       var data = obj_controller_player._data;
+      cleanup_sequence();
       show_debug_message("[ENEMY ATTACK SEQUENCE RESOLVED]");
-      get_sector_data();
       global.inputmode.mode = global.inputmode.tmp_old;
 
+      // Process post-attack warp or impulse moves
       if (is_struct(data) && global.ent.condition != Condition.Destroyed) {
         if (!is_undefined(data.post)) {
           if (is_array(data.post) && array_length(data.post) > 0 &&
@@ -253,6 +239,9 @@ function player_phaser_attack() {
 
   var player = instance_find(obj_controller_player, 0);
   if (!player) return;
+  
+  // Validate enemies
+  validate_enemies();
 
   player._data = undefined;
   player.attack_buffer = [];
@@ -293,22 +282,10 @@ function queue_next_attack(i) {
     player.destroyed_count = 0;
 
     array_push(global.queue, function() {
+      cleanup_sequence();
       show_debug_message("[PLAYER ATTACK SEQUENCE RESOLVED]");
-      var valid_enemy_count = 0;
-      for (var i = 0; i < array_length(obj_controller_player.local_enemies); i++) {
-        var idx = obj_controller_player.local_enemies[i];
-        if (idx != undefined && idx >= 0 && idx < array_length(global.allenemies)) {
-          var enemy = global.allenemies[idx];
-          if (is_struct(enemy) && enemy.energy > 0) {
-            valid_enemy_count++;
-          }
-        }
-      }
-
-      if (valid_enemy_count > 0) {
+      if (array_length(obj_controller_player.local_enemies) > 0) {
         enemy_attack();
-      } else {
-        get_sector_data();
       }
     });
 
@@ -316,21 +293,7 @@ function queue_next_attack(i) {
   }
 
   var enemy_index = targets[i];
-
-  // Validate enemy index
-  if (!is_numeric(enemy_index) || enemy_index < 0 || enemy_index >= array_length(global.allenemies)) {
-    show_debug_message("Warning: Skipping invalid enemy index " + string(enemy_index));
-    queue_next_attack(i + 1);
-    return;
-  }
-
   var enemy = global.allenemies[enemy_index];
-
-  if (!is_struct(enemy) || enemy.energy <= 0) {
-    show_debug_message("Warning: Skipping dead enemy at index " + string(enemy_index));
-    queue_next_attack(i + 1);
-    return;
-  }
 
   // Player and enemy coords
   var px = global.ent.lx;
@@ -472,10 +435,8 @@ function destroy_enemy(idx) {
     global.busy = true;
     array_resize(global.queue, global.index);
     array_push(global.queue, function() {
-      return immediate_dialog(Speaker.Uhura, "condition.win1");
-    });
-    array_push(global.queue, function() {
-      return immediate_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
+      queue_dialog(Speaker.Uhura, "condition.win1");
+      queue_dialog(Speaker.Kirk, "condition.win2", vo_kirk_onscreen);
     });
     array_push(global.queue, function() {
       global.ent.condition = Condition.Win;
@@ -484,4 +445,57 @@ function destroy_enemy(idx) {
       return undefined;
     });
   }
+}
+
+/// @description: Validates enemies in local sector
+function validate_enemies() {
+  var player = obj_controller_player;
+  var valid = [];
+  var removed_count = 0;
+
+  for (var i = 0; i < array_length(player.local_enemies); i++) {
+    var idx = player.local_enemies[i];
+    
+    if (!is_numeric(idx)) {
+      continue;
+    }
+    if (idx < 0 || idx >= array_length(global.allenemies)) {
+      continue;
+    }
+
+    var e = global.allenemies[idx];
+    if (!is_struct(e)) {
+      continue;
+    }
+    if (e.energy <= 0) {
+      continue;
+    }
+    
+    // Passed all checks, keep enemy
+    array_push(valid, idx);
+  }
+
+  player.local_enemies = valid;
+}
+
+/// @description: Clean up player local enemy references and refresh data
+function cleanup_sequence() {
+
+  // Refresh local sector data
+  get_sector_data();
+  
+  // Validate local enemies
+  validate_enemies();
+
+  // Reset any attack buffers and queues
+  var player = instance_find(obj_controller_player, 0);
+  if (player) {
+    player.attack_buffer = [];
+    player.attack_indexes = [];
+    player._data = undefined;
+    player.attack_index = 0;
+  }
+  
+  show_debug_message("[CLEANUP SEQUENCE CALLED]");
+  show_debug_message("- Current local enemies after cleanup: " + string(player.local_enemies));
 }
