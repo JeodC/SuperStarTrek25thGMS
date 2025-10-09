@@ -19,8 +19,7 @@ if (global.game.state == State.Intro) {
   dialog_helptext();
 }
 
-// If loaded set up states -- check for enemies and refresh local sector arrays
-// for obj_player
+// If loaded set up states -- check for enemies and refresh local sector arrays for obj_player
 if (global.game.state == State.Loading) {
   if (global.loaded_state != undefined) {
     apply_player_state(global.loaded_state);
@@ -37,8 +36,7 @@ if (global.inputmode.mode == InputMode.Bridge &&
   audio_play_sound(mus_bridge_ambient, 1, true);
 }
 
-// Handle the resolve queue -- this exists in obj_player so the queue only runs
-// during gameplay
+// Handle the resolve queue -- this exists in obj_player so the queue only runs during gameplay
 if (global.busy) {
   handle_queue();
 }

@@ -1,7 +1,7 @@
 // Always busy while movie object exists
 global.busy = true;
 
-// --- Input to skip movie
+// Input to skip movie
 if (input_any()) {
   global.busy = false;
 
@@ -35,27 +35,24 @@ if (input_any()) {
   }
 }
 
-// --- Warp animation finished (no loop, ends when audio stops)
-if (sprite_index == spr_anim_warp && !audio_is_playing(mus_warp) &&
-  global.game.state == State.Playing) {
+// Warp animation finished (no loop, ends when audio stops)
+if (sprite_index == spr_anim_warp && !audio_is_playing(mus_warp) && global.game.state == State.Playing) {
   end_movie();
   return;
 }
 
-// --- Intro/sector movement movie finished (by animation frame)
-var movie_done =
-    (sprite_index == spr_anim_move && image_index >= image_number - 1 &&
-     global.ent.condition != Condition.Stranded &&
-     global.ent.condition != Condition.NoTime);
+// Intro/sector movement movie finished (by animation frame)
+var movie_done = (sprite_index == spr_anim_move && image_index >= image_number - 1 && global.ent.condition != Condition.Stranded && global.ent.condition != Condition.NoTime);
 if (movie_done) {
   global.busy = false;
 
-  if (global.ent.condition == Condition.Destroyed ||
-      global.ent.condition == Condition.Stranded) {
+  if (global.ent.condition == Condition.Destroyed || global.ent.condition == Condition.Stranded) {
     global.game.state = State.Lose;
-  } else if (global.game.state == State.Movie) {
+  } 
+  else if (global.game.state == State.Movie) {
     global.game.state = State.Briefing;
-  } else if (global.game.state == State.Win) {
+  } 
+  else if (global.game.state == State.Win) {
     global.game.state = State.Credits;
   }
 
@@ -66,7 +63,7 @@ if (movie_done) {
   }
 }
 
-// --- Handle loss or win screen countdown or input skip
+// Handle loss or win screen countdown or input skip
 if (global.game.state == State.Lose) {
   timer--;
 
@@ -76,7 +73,7 @@ if (global.game.state == State.Lose) {
   }
 }
 
-// --- Destroyed animation looping at final frame
+// Destroyed animation looping at final frame
 if (sprite_index == spr_anim_destroyed && image_index >= image_number - 1) {
   image_index = 68; // Hold final frame
 }
@@ -88,14 +85,14 @@ if (room == rm_endgame && global.game.state == State.Credits && !credits_initial
   image_index = 106;
 }
 
-// --- Helper: End Movie
+// Helper: End Movie
 function end_movie() {
   audio_stop_all();
   reset_player_state();
   instance_destroy();
 }
 
-// --- Helper: Reset game input/display after movie
+// Helper: Reset game input/display after movie
 function reset_player_state() {
   if (instance_exists(obj_controller_player)) {
     global.busy = true;
@@ -176,31 +173,27 @@ function add_credit_line() {
         var next_text = lang_get(next_key);
         var next_text_len = string_length(next_text);
 
-        var base_timer = 10;   // Base duration (in frames) before showing
-                               // the next credit line
-        var min_timer = 100;   // Minimum allowed duration for the timer
-                               // (prevents it from being too short)
-        var name_timer = 14;   // Short timer for lines considered "names"
-                               // (usually short lines)
-        var max_timer = 80;    // Maximum allowed duration for the timer
-                               // (prevents it from being too long)
-        var length_factor = 2; // Multiplier applied to the length of the next
-                               // line to increase timer duration proportionally
-        var name_threshold = 20; // Maximum length (in characters) for a line to
-                                 // be considered a "name" (short line)
+        var base_timer = 10;   // Base duration (in frames) before showing the next credit line
+        var min_timer = 100;   // Minimum allowed duration for the timer (prevents it from being too short)
+        var name_timer = 14;   // Short timer for lines considered "names" (usually short lines)
+        var max_timer = 80;    // Maximum allowed duration for the timer (prevents it from being too long)
+        var length_factor = 2; // Multiplier applied to the length of the next line to increase timer duration proportionally
+        var name_threshold = 20; // Maximum length (in characters) for a line to be considered a "name" (short line)
 
         if (next_text_len <= name_threshold) {
           ctimer = name_timer;
-        } else {
-          ctimer = clamp(base_timer + (next_text_len * length_factor),
-                         min_timer, max_timer);
+        } 
+        else {
+          ctimer = clamp(base_timer + (next_text_len * length_factor), min_timer, max_timer);
         }
-      } else {
+      } 
+      else {
         ctimer = 160;
       }
 
       credits_index++;
-    } else {
+    }
+    else {
       ctimer = -1;
     }
   }

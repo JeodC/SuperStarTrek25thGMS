@@ -132,12 +132,7 @@ function queue_next_enemy_attack(i, post) {
   array_push(global.queue, function() {
     var idx = obj_controller_player.attack_indexes[global.index];
     var data = obj_controller_player.attack_buffer[idx];
-    return immediate_dialog(
-      Speaker.Sulu,
-      "battle.enemyfiring",
-      noone,
-      {coord: string(data.lx + 1) + "," + string(data.ly + 1)}
-    );
+    return immediate_dialog( Speaker.Sulu, "battle.enemyfiring", noone, {coord: string(data.lx + 1) + "," + string(data.ly + 1)} );
   });
 
   // Queue visual effect

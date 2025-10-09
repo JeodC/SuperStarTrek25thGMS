@@ -37,13 +37,11 @@ enum InputSource {
 
 // Modes
 // None - No input
-// UI - Generic mouse/keyboard/gamepad to scroll through and click on ui buttons
-// and options sliders Bridge - Mouse/keyboard/gamepad to scroll through
-// HoverState and confirm player action Warp - Mouse/keyboard/gamepad to scroll
-// and select a sector to warp to on the galaxy map Impulse -
-// Mouse/keyboard/gamepad to scroll and select an available cell to move to in
-// the current sector Manage - Keyboard/gamepad to increment shields/phaser
-// levels
+// UI - Generic mouse/keyboard/gamepad to scroll through and click on ui buttons and options sliders
+// Bridge - Mouse/keyboard/gamepad to scroll through HoverState and confirm player action
+// Warp - Mouse/keyboard/gamepad to scroll and select a sector to warp to on the galaxy map
+// Impulse - Mouse/keyboard/gamepad to scroll and select an available cell to move to in the current sector
+// Manage - Keyboard/gamepad to increment shields/phaser levels
 enum InputMode {
   None,
   UI,
@@ -86,132 +84,37 @@ last_state = -1;
 // Mouse hover regions
 hover_regions = [
   // Shields bar
-  {
-    x1 : 82,
-    x2 : 132,
-    y1 : 12,
-    y2 : 26,
-    state : HoverState.Shields
-  },
+  { x1: 82, x2: 132, y1: 12, y2: 26, state: HoverState.Shields },
   // Left ship display
-  {
-    x1 : 0,
-    x2 : 60,
-    y1 : 70,
-    y2 : 98,
-    state : HoverState.Shields
-  },
+  { x1: 0, x2: 60, y1: 70, y2: 98, state: HoverState.Shields },
   // Right ship display
-  {
-    x1 : 260,
-    x2 : 320,
-    y1 : 70,
-    y2 : 98,
-    state : HoverState.Shields
-  },
+  { x1: 260, x2: 320, y1: 70, y2: 98, state: HoverState.Shields },
   // Energy bar
-  {
-    x1 : 137,
-    x2 : 183,
-    y1 : 12,
-    y2 : 26,
-    state : HoverState.Energy
-  },
+  { x1: 137, x2: 183, y1: 12, y2: 26, state: HoverState.Energy },
   // Terminal - Damage Report
-  {
-    x1 : 32,
-    x2 : 43,
-    y1 : 120,
-    y2 : 132,
-    state : HoverState.DamageStatus
-  },
+  { x1: 32, x2: 43, y1: 120, y2: 132, state: HoverState.DamageStatus },
   // Scotty Report
-  {
-    x1 : 46,
-    x2 : 64,
-    y1 : 109,
-    y2 : 145,
-    state : HoverState.ScottStatus
-  },
+  { x1: 46, x2: 64, y1: 109, y2: 145, state: HoverState.ScottStatus },
   // Warp Speed
-  {
-    x1 : 104,
-    x2 : 124,
-    y1 : 130,
-    y2 : 145,
-    state : HoverState.WarpSpeed
-  },
+  { x1: 104, x2: 124, y1: 130, y2: 145, state: HoverState.WarpSpeed },
   // Impulse Speed
-  {
-    x1 : 125,
-    x2 : 138,
-    y1 : 119,
-    y2 : 155,
-    state : HoverState.ImpulseSpeed
-  },
+  { x1: 125, x2: 138, y1: 119, y2: 155, state: HoverState.ImpulseSpeed },
   // Warp Map
-  {
-    x1 : 138,
-    x2 : 180,
-    y1 : 155,
-    y2 : 194,
-    state : HoverState.GalacticMap
-  },
+  { x1: 138, x2: 180, y1: 155, y2: 194, state: HoverState.GalacticMap },
   // LRS
-  {
-    x1 : 145,
-    x2 : 172,
-    y1 : 130,
-    y2 : 150,
-    state : HoverState.LongRangeSensors
-  },
+  { x1: 145, x2: 172, y1: 130, y2: 150, state: HoverState.LongRangeSensors },
   // Phasers
-  {
-    x1 : 180,
-    x2 : 195,
-    y1 : 127,
-    y2 : 150,
-    state : HoverState.Phasers
-  },
+  { x1: 180, x2: 195, y1: 127, y2: 150, state: HoverState.Phasers },
   // Torpedoes
-  {
-    x1 : 203,
-    x2 : 216,
-    y1 : 127,
-    y2 : 150,
-    state : HoverState.Torpedoes
-  },
+  { x1: 203, x2: 216, y1: 127, y2: 150, state: HoverState.Torpedoes },
   // Spock
-  {
-    x1 : 277,
-    x2 : 306,
-    y1 : 119,
-    y2 : 150,
-    state : HoverState.MissionStatus
-  },
+  { x1: 277, x2: 306, y1: 119, y2: 150, state: HoverState.MissionStatus },
   // Uhura
-  {
-    x1 : 283,
-    x2 : 309,
-    y1 : 173,
-    y2 : 193,
-    state : HoverState.DockingProcedures
-  },
+  { x1: 283, x2: 309, y1: 173, y2: 193, state: HoverState.DockingProcedures },
   // Options
-  {
-    x1 : 60,
-    x2 : 68,
-    y1 : 42,
-    y2 : 56,
-    state : HoverState.Options
-  },
+  { x1: 60, x2: 68, y1: 42, y2: 56, state: HoverState.Options },
   // Help
-  {
-    x1 : 250,
-	x2 : 257,
-	y1 : 42,
-	y2 : 48,
-	state : HoverState.Help},
+  { x1: 250, x2: 257, y1: 42, y2: 48, state: HoverState.Help },
 ];
 
 all_regions = hover_regions;

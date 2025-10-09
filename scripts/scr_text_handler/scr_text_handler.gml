@@ -33,13 +33,9 @@ function process_dialog(text) {
 /// @param {string} line_id: The localization key for the dialog line
 /// @param {any} voice_id: Sound asset to use or noone
 /// @param {struct} format: Optional format arguments for lang_format
-function immediate_dialog(speaker, line_id, voice_id = noone,
-                          format = undefined) {
-  var resolved_line =
-      is_struct(format) ? lang_format(line_id, format) : lang_get(line_id);
-
+function immediate_dialog(speaker, line_id, voice_id = noone, format = undefined) {
+  var resolved_line = is_struct(format) ? lang_format(line_id, format) : lang_get(line_id);
   var dialog_line = {speaker : speaker, line : resolved_line, voice : voice_id};
-
   return [dialog_line];
 }
 
@@ -50,15 +46,9 @@ function immediate_dialog(speaker, line_id, voice_id = noone,
 /// @param {struct} format: Optional format arguments for lang_format
 function queue_dialog(speaker, line_id, voice_id = noone, format = undefined) {
   global.busy = true;
-
-  var resolved_line =
-      is_struct(format) ? lang_format(line_id, format) : lang_get(line_id);
-
+  var resolved_line = is_struct(format) ? lang_format(line_id, format) : lang_get(line_id);
   var dialog_line = {speaker : speaker, line : resolved_line, voice : voice_id};
-
-  var dialog_closure =
-      method({dialog : dialog_line}, function() { return [dialog]; });
-
+  var dialog_closure = method({dialog : dialog_line}, function() { return [dialog]; });
   array_push(global.queue, dialog_closure);
 }
 

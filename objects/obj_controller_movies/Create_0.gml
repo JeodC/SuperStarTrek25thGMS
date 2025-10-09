@@ -65,8 +65,7 @@ function init_animation_by_condition() {
 function handle_warp_mode() {
   if (global.inputmode.mode == InputMode.Warp) {
     global.inputmode.mode = InputMode.None;
-    show_debug_message("Player warped to sector [" + string(global.ent.sx) +
-                       "," + string(global.ent.sy) + "].");
+    show_debug_message("Player warped to sector [" + string(global.ent.sx) + "," + string(global.ent.sy) + "].");
 
     if (global.ent.condition != Condition.NoTime &&
         global.ent.condition != Condition.Stranded) {

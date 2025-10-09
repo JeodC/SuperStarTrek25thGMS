@@ -1,5 +1,4 @@
-/// @description: Draws the text when hovering over an eligible region in the
-/// Bridge play area
+/// @description: Draws the text when hovering over an eligible region in the Bridge play area
 function draw_hover_text() {
   var state_name = "";
   var label_x = 160;

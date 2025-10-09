@@ -5,8 +5,7 @@ function dialog_introspeech() {
 
 /// @description: Queue text that tells the player how to open the Help menu
 function dialog_helptext() {
-  queue_dialog(Speaker.None, "gamestart.help", noone,
-               {key : get_keyname("help")});
+  queue_dialog(Speaker.None, "gamestart.help", noone, {key : get_keyname("help")});
 }
 
 /// @description: Check for enemies in the current sector and queue appropriate
@@ -26,8 +25,7 @@ function dialog_enemy_check() {
     // Add Uhura's line only if first enemy encounter
     if (!obj_controller_player.firstenemyspotted) {
       obj_controller_player.firstenemyspotted = true;
-      queue_dialog(Speaker.Uhura, "gamestart.enemyspotted",
-                   vo_uhura_enemy_spotted);
+      queue_dialog(Speaker.Uhura, "gamestart.enemyspotted", vo_uhura_enemy_spotted);
     }
 
     // Always add Kirk's red alert
@@ -35,9 +33,9 @@ function dialog_enemy_check() {
 
     // Spock chimes in if shields are down or low
     if (global.ent.shields == 0) {
-      queue_dialog(Speaker.Spock, "redalert.shieldsdown",
-                   vo_spock_shields_down);
-    } else if (global.ent.shields < 200) {
+      queue_dialog(Speaker.Spock, "redalert.shieldsdown", vo_spock_shields_down);
+    }
+    else if (global.ent.shields < 200) {
       queue_dialog(Speaker.Spock, "redalert.shieldslow");
     }
 
@@ -61,61 +59,62 @@ function dialog_enemy_check() {
 function dialog_navigation(mode) {
   var sector = global.galaxy[global.ent.sx][global.ent.sy];
 
+  // Warp
   if (mode == 1) {
     queue_dialog(Speaker.Kirk, "engines.warp.engage", vo_kirk_warp);
+    // Warp engine too damaged to use
     if (global.ent.system.warp < 10) {
       queue_dialog(Speaker.Spock, "engines.warp.damaged");
-    } else if (sector.enemynum > 0) {
+    }
+    else if (sector.enemynum > 0) {
       queue_dialog(Speaker.Sulu, "engines.warn1");
       // Pull up the warp map anyway
       global.inputmode.cursor_x = global.ent.sx;
       global.inputmode.cursor_y = global.ent.sy;
       global.queue[array_length(global.queue)] = function() {
-        obj_controller_player.display =
-            Reports.Warp; // Stop drawing the current sector and draw
-                          // the galaxy map
+        obj_controller_player.display = Reports.Warp; // Stop drawing the current sector and draw the galaxy map
         global.inputmode.mode = InputMode.Warp;
       };
-    } else {
+    }
+    else {
       queue_dialog(Speaker.Sulu, "engines.aye", vo_sulu_aye);
       // Pull up the warp map
       global.inputmode.cursor_x = global.ent.sx;
       global.inputmode.cursor_y = global.ent.sy;
       global.queue[array_length(global.queue)] = function() {
-        obj_controller_player.display =
-            Reports.Warp; // Stop drawing the current sector and draw
-                          // the galaxy map
+        obj_controller_player.display = Reports.Warp; // Stop drawing the current sector and draw the galaxy map
         global.inputmode.mode = InputMode.Warp;
       };
     }
-  } else if (mode == 2) {
+  }
+  
+  // Impulse
+  if (mode == 2) {
     queue_dialog(Speaker.Kirk, "engines.impulse.engage", vo_kirk_impulse);
+    // Impulse drive too damaged to use
     if (global.ent.system.navigation < 10) {
       queue_dialog(Speaker.Sulu, "engines.impulse.damaged");
-    } else if (sector.enemynum > 0) {
+    }
+    else if (sector.enemynum > 0) {
       queue_dialog(Speaker.Sulu, "engines.warn2");
       if (!obj_controller_player.impulsehelp) {
-        queue_dialog(Speaker.None, "engines.impulse.help1", noone,
-                     {key : get_keyname("move")});
-        queue_dialog(Speaker.None, "engines.impulse.help2", noone,
-                     {key : get_keyname("confirm")});
+        queue_dialog(Speaker.None, "engines.impulse.help1", noone, {key : get_keyname("move")});
+        queue_dialog(Speaker.None, "engines.impulse.help2", noone, key : get_keyname("confirm")});
         obj_controller_player.impulsehelp = true;
       }
-      // Enemies will attack if player moves but the player can move
-      // anyway
+      // Enemies will attack if player moves but the player can move anyway
       global.queue[array_length(global.queue)] = function() {
         obj_controller_player.display = Reports.Impulse;
         global.inputmode.mode = InputMode.Impulse;
         global.inputmode.cursor_x = global.ent.lx;
         global.inputmode.cursor_y = global.ent.ly;
       };
-    } else {
+    }
+    else {
       queue_dialog(Speaker.Sulu, "engines.aye", vo_sulu_aye);
       if (!obj_controller_player.impulsehelp) {
-        queue_dialog(Speaker.None, "engines.impulse.help1", -1,
-                     {key : get_keyname("move")});
-        queue_dialog(Speaker.None, "engines.impulse.help2", -1,
-                     {key : get_keyname("confirm")});
+        queue_dialog(Speaker.None, "engines.impulse.help1", noone, {key : get_keyname("move")});
+        queue_dialog(Speaker.None, "engines.impulse.help2", noone, {key : get_keyname("confirm")});
         obj_controller_player.impulsehelp = true;
       }
       // Queue impulse mode after dialog
@@ -259,7 +258,7 @@ function dialog_report(report) {
   return result;
 }
 
-/// @description Queues dialog for starbase docking requests
+/// @description: Queues dialog for starbase docking requests
 function dialog_docking() {
   var sector = global.galaxy[global.ent.sx][global.ent.sy];
 

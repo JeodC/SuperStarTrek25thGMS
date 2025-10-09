@@ -2,8 +2,7 @@
 /// @description: Handles game state
 
 // Only draw if the current game has not ended
-if ((global.game.state == State.Playing) &&
-    global.inputmode.mode != InputMode.UI) {
+if ((global.game.state == State.Playing) && global.inputmode.mode != InputMode.UI) {
   var sector = global.galaxy[global.ent.sx][global.ent.sy];
 
   // Draw the screen contents

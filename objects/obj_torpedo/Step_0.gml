@@ -23,16 +23,10 @@ grid_y = floor((y - map_offset_y) / size_cell_y);
 // Update approximate distance traveled in grid units
 distance_traveled += speed / max(size_cell_x, size_cell_y);
 
-// Check for collisions against global.allenemies, global.galaxy bases, and stars
-// instead of relying on local cached objects to ensure data integrity
-
-destroy_reason = "";  // Reset destroy reason each step
-
 // Helper function to check base presence in current sector grid
 function check_base_at_cell(sx, sy, lx, ly) {
     var sector = global.galaxy[sx][sy];
     if (sector == undefined) return false;
-    // Assume sector.bases is an array of base structs with lx, ly coords
     if (!variable_struct_exists(sector, "bases")) return false;
 
     var bases = sector.bases;
@@ -79,7 +73,7 @@ var sy = global.ent.sy;
 // Check for base hit
 if (check_base_at_cell(sx, sy, grid_x, grid_y)) {
     queue_dialog(Speaker.Chekov, "torpedo.hitbase");
-    destroy_reason = "hit base at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
+    destroy_reason = "Torpedo hit base at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
 }
 // Check for enemy hit
 else {
@@ -88,24 +82,23 @@ else {
         destroy_enemy(enemy_idx);
         get_sector_data();
         dialog_condition();
-        destroy_reason = "hit enemy at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
+        destroy_reason = "Torpedo hit enemy at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
     }
 }
 // Check for star hit
 if (destroy_reason == "" && star_at_cell(sx, sy, grid_x, grid_y)) {
     queue_dialog(Speaker.Chekov, "torpedo.hitstar");
-    destroy_reason = "hit star at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
+    destroy_reason = "Torpedo hit star at grid (" + string(grid_x) + ", " + string(grid_y) + ")";
 }
 
 // Check if torpedo left sector boundaries
 if (destroy_reason == "" && (grid_x < 0 || grid_x > 7 || grid_y < 0 || grid_y > 7)) {
     queue_dialog(Speaker.Chekov, "torpedo.missed");
-    destroy_reason = "left the sector";
+    destroy_reason = "Torpedo left the sector";
 }
 
 // If any destruction condition met, destroy torpedo instance and cleanup
 if (destroy_reason != "") {
-    show_debug_message("Torpedo " + destroy_reason);
     global.inputmode.type = undefined;
     global.inputmode.mode = InputMode.Bridge;
     obj_controller_player.display = Reports.Default;

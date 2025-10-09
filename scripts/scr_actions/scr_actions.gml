@@ -61,8 +61,7 @@ function action_warp(sx, sy) {
   return true;
 }
 
-/// @description: Attempts to move the player to the selected cell in the
-/// current sector
+/// @description: Attempts to move the player to the selected cell in thecurrent sector
 function action_impulse() {
   var sector = global.galaxy[global.ent.sx][global.ent.sy];
 
@@ -84,8 +83,7 @@ function action_impulse() {
           global.ent.isdocked = false;
           return true;
         } else {
-          // Enemies attack first but the function processes the move
-          // after
+          // Enemies attack first but the function processes the move after
           obj_controller_player._path = path;
           array_push(
               global.queue,
