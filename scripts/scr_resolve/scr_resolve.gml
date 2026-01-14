@@ -360,6 +360,11 @@ function get_sector_data(sx = global.ent.sx, sy = global.ent.sy) {
     }
   }
 
+  // Update global galaxy with corrected counts
+  global.galaxy[sx][sy].enemynum = s.enemynum;
+  global.galaxy[sx][sy].basenum = s.basenum;
+  global.galaxy[sx][sy].starnum = s.starnum;
+
   ds_map_destroy(enemy_map);
   ds_map_destroy(base_map);
 

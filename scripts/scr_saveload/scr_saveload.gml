@@ -64,6 +64,7 @@ function save_game(filename) {
       }
     }
     global.allenemies = cleaned_enemies;
+    global.game.totalenemies = array_length(global.allenemies);
 
     // Write allenemies (array of EnemyShip structs)
     buffer_write(buf, buffer_u32, array_length(global.allenemies));
