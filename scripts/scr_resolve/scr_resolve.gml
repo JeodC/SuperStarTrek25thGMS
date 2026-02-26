@@ -154,7 +154,7 @@ function advancetime(days) {
   }
 
   global.game.date += days;
-  var daysleft = global.game.t0 + (global.game.maxdays - global.game.date);
+  var daysleft = global.game.maxdays - (global.game.date - global.game.t0);
 
   // If time has expired, handle loss
   if (daysleft < 1) {
