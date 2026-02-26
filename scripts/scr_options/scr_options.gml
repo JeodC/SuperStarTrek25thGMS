@@ -53,7 +53,7 @@ function load_options() {
   if file_exists (global.ini) {
     ini_open(global.ini);
     global.audio_mode = ini_read_real("Game", "audio_mode", 0);
-    global.difficulty = ini_read_real("Game", "difficulty", 0);
+    global.difficulty = ini_read_real("Game", "difficulty", 1);
     var saved_lang = ini_read_string("Game", "lang", "en");
     if (is_array(global.langs) && array_contains(global.langs, saved_lang)) {
       global.lang_selected = saved_lang;
