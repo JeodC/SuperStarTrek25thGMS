@@ -424,6 +424,7 @@ function update_srs_regions() {
 /// @param {real} x: Sector x coordinate
 /// @param {real} y: Sector y coordinate
 function change_sector(x, y) {
+  var start_time = get_timer();
 
   // Validate sector coordinates
   if (x < 0 || x > 7 || y < 0 || y > 7) {
