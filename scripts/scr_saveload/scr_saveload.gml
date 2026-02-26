@@ -25,8 +25,7 @@ function save_game(filename) {
     buffer_write(buf, buffer_s32, global.game.date);
     buffer_write(buf, buffer_s32, global.game.t0);
     buffer_write(buf, buffer_f32, global.game.score);
-    buffer_write(buf, buffer_string,
-                 string(global.game.state)); // Enum as string
+    buffer_write(buf, buffer_s32, global.game.state);
 
     // Write ent (Ship struct)
     write_ship(buf, global.ent);
@@ -115,7 +114,7 @@ function write_ship(buf, ship) {
   buffer_write(buf, buffer_f32, ship.torpedoes);
   buffer_write(buf, buffer_f32, ship.shields);
   buffer_write(buf, buffer_f32, ship.phasers);
-  buffer_write(buf, buffer_string, string(ship.condition)); // Enum as string
+  buffer_write(buf, buffer_s32, ship.condition);
   buffer_write(buf, buffer_bool, ship.isdocked);
   buffer_write(buf, buffer_f32, ship.generaldamage);
   // Write system struct
@@ -143,7 +142,7 @@ function write_ship(buf, ship) {
 /// @param {any} buf: The buffer to write to
 /// @param {struct} state: The player state struct
 function write_player_state(buf, state) {
-  buffer_write(buf, buffer_string, string(state.display)); // Enum as string
+  buffer_write(buf, buffer_s32, state.display);
   buffer_write(buf, buffer_bool, state.end_turn);
   // Assume anim_lrs_state and anim_siren_state are empty or simple structs
   buffer_write(buf, buffer_bool,
@@ -205,7 +204,7 @@ function load_game(filename) {
     global.game.date = buffer_read(buf, buffer_s32);
     global.game.t0 = buffer_read(buf, buffer_s32);
     global.game.score = buffer_read(buf, buffer_f32);
-    global.game.state = real(buffer_read(buf, buffer_string)); // Restore enum
+    global.game.state = buffer_read(buf, buffer_s32);
 
     // Read ent (Ship struct)
     global.ent = read_ship(buf);
@@ -289,7 +288,7 @@ function read_ship(buf) {
   ship.torpedoes = buffer_read(buf, buffer_f32);
   ship.shields = buffer_read(buf, buffer_f32);
   ship.phasers = buffer_read(buf, buffer_f32);
-  ship.condition = real(buffer_read(buf, buffer_string)); // Restore enum
+  ship.condition = buffer_read(buf, buffer_s32);
   ship.isdocked = buffer_read(buf, buffer_bool);
   ship.generaldamage = buffer_read(buf, buffer_f32);
   ship.system = {
@@ -319,7 +318,7 @@ function read_ship(buf) {
 /// @param {any} buf: The buffer to read from
 function read_player_state(buf) {
   var state = {};
-  state.display = real(buffer_read(buf, buffer_string)); // Restore enum
+  state.display = buffer_read(buf, buffer_s32);
   state.end_turn = buffer_read(buf, buffer_bool);
   // Read anim_lrs_state
   var has_lrs_state = buffer_read(buf, buffer_bool);
