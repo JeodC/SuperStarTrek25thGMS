@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"mus_briefing_movie",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
   },
   "bitDepth":1,
-  "bitRate":64,
-  "compression":0,
+  "channelFormat":1,
+  "compression":1,
+  "compressionQuality":1,
   "conversionMode":0,
   "duration":4.8297505,
+  "exportDir":"",
   "name":"mus_briefing_movie",
   "parent":{
     "name":"mus",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"mus_briefing_movie.ogg",
-  "type":0,
   "volume":1.0,
 }

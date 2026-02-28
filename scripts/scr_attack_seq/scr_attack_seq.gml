@@ -1,3 +1,6 @@
+/// scr_attack_seq
+/// functions to handle battle phases
+
 /// @description: Entrypoint for enemy attack sequence
 /// @param {any} post: Player impulse path (array) or warp destination ([tx, ty]) -- Gets passed into queue_next_enemy_attack
 function enemy_attack(post = undefined) {

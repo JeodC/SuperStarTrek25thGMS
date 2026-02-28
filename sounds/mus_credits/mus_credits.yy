@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"mus_credits",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
   },
   "bitDepth":1,
-  "bitRate":128,
-  "compression":0,
+  "channelFormat":1,
+  "compression":1,
+  "compressionQuality":4,
   "conversionMode":0,
-  "duration":44.828094,
+  "duration":191.88463,
+  "exportDir":"",
   "name":"mus_credits",
   "parent":{
     "name":"mus",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"mus_credits.ogg",
-  "type":0,
   "volume":1.0,
 }

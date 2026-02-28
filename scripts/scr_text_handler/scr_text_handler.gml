@@ -1,3 +1,6 @@
+/// scr_text_handler
+/// functions for handling dialog queue
+
 /// @description: Returns normalized translation for a key from global.lang_data
 /// @param {array} text: Dialog array (speaker, line, voice)
 function process_dialog(text) {

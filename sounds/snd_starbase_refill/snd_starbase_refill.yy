@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"snd_starbase_refill",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
   },
   "bitDepth":1,
-  "bitRate":64,
-  "compression":0,
+  "channelFormat":1,
+  "compression":1,
+  "compressionQuality":1,
   "conversionMode":0,
   "duration":4.5746484,
+  "exportDir":"",
   "name":"snd_starbase_refill",
   "parent":{
     "name":"sfx",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"snd_starbase_refill.ogg",
-  "type":0,
   "volume":1.0,
 }

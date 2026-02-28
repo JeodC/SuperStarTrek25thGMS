@@ -1,3 +1,6 @@
+/// scr_saveload
+/// functions for saving and loading game states
+
 /// @description: Saves the game state to a binary file using a buffer.
 /// @param {string} filename: The name of the save file.
 function save_game(filename) {

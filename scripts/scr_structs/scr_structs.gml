@@ -1,3 +1,6 @@
+/// scr_structs
+/// initial constants and struct definitions
+
 ///@description: Struct for default Game values
 function Game() {
   return {

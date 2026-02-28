@@ -1,3 +1,6 @@
+/// scr_galaxy
+/// functions to manage galaxy generation on new games
+
 /// @description: Places enemies with 3x3 cell clearance
 /// @param {real} enemy_count - Number of enemies already placed
 /// @param {real} total_enemies - Target number of enemies to place

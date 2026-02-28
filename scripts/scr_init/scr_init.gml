@@ -1,3 +1,6 @@
+/// scr_init
+/// functions for starting the game
+
 /// @description: Initializes application
 function scr_init() {
 

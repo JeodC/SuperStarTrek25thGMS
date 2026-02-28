@@ -1,3 +1,6 @@
+/// scr_effects
+/// helper functions and special effects
+
 /// @description: Returns an integer 0-3 representing direction based on vector dx, dy
 /// @param {real} dx: Horizontal component of the vector
 /// @param {real} dy: Vertical component of the vector

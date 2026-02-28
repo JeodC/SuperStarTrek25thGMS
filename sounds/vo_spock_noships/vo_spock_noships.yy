@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"vo_spock_noships",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
   },
   "bitDepth":1,
-  "bitRate":64,
-  "compression":0,
+  "channelFormat":1,
+  "compression":1,
+  "compressionQuality":1,
   "conversionMode":0,
   "duration":1.7666667,
+  "exportDir":"",
   "name":"vo_spock_noships",
   "parent":{
     "name":"spock",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"vo_spock_noships.ogg",
-  "type":0,
   "volume":1.0,
 }

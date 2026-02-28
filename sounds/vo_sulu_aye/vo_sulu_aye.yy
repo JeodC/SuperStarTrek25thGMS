@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"vo_sulu_aye",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
   },
   "bitDepth":1,
-  "bitRate":64,
-  "compression":0,
+  "channelFormat":1,
+  "compression":1,
+  "compressionQuality":1,
   "conversionMode":0,
-  "duration":0.86396825,
+  "duration":0.874127,
+  "exportDir":"",
   "name":"vo_sulu_aye",
   "parent":{
     "name":"sulu",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"vo_sulu_aye.ogg",
-  "type":0,
   "volume":1.0,
 }

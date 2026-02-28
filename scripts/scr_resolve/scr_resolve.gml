@@ -1,3 +1,6 @@
+/// scr_resolve
+/// functions for reacting to player actions
+
 /// @description: Resets the Enterprise to its initial state
 function init_enterprise() {
   audio_play_sound(snd_starbase_refill, 0, false);

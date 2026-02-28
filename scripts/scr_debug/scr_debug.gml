@@ -1,3 +1,6 @@
+/// scr_debug
+/// functions for developer testing
+
 /// @description: Hotkeys for testing
 function debug_handle_keys() {
   if (!global.debug || global.busy || global.inputmode.mode != InputMode.Bridge)

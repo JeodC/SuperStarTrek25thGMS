@@ -1,3 +1,6 @@
+/// scr_options
+/// functions for managing the game options and menu
+
 /// @description: Changes the current language by a given amount (e.g. next or previous), wraps around, and updates the language list
 /// @param {real} delta: Amount to change the language index by (can be negative)
 function update_language_index(delta) {

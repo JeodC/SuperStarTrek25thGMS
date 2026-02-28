@@ -1,3 +1,6 @@
+/// scr_actions
+/// functions for applying immediate effects to player commands
+
 /// @description: Checks if the player can warp
 /// @param {real} sx: Destination sector x
 /// @param {real} sy: Destination sector y
@@ -61,7 +64,7 @@ function action_warp(sx, sy) {
   return true;
 }
 
-/// @description: Attempts to move the player to the selected cell in thecurrent sector
+/// @description: Attempts to move the player to the selected cell in the current sector
 function action_impulse() {
   var sector = global.galaxy[global.ent.sx][global.ent.sy];
 

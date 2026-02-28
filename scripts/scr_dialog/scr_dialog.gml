@@ -1,3 +1,6 @@
+/// scr_dialog
+/// functions to handle dialog
+
 /// @description: Queue Chekov's intro line
 function dialog_introspeech() {
   queue_dialog(Speaker.Chekov, "gamestart.intro", vo_chekov_approaching);
@@ -99,7 +102,7 @@ function dialog_navigation(mode) {
       queue_dialog(Speaker.Sulu, "engines.warn2");
       if (!obj_controller_player.impulsehelp) {
         queue_dialog(Speaker.None, "engines.impulse.help1", noone, {key : get_keyname("move")});
-        queue_dialog(Speaker.None, "engines.impulse.help2", noone, key : get_keyname("confirm")});
+        queue_dialog(Speaker.None, "engines.impulse.help2", noone, {key : get_keyname("confirm")});
         obj_controller_player.impulsehelp = true;
       }
       // Enemies will attack if player moves but the player can move anyway

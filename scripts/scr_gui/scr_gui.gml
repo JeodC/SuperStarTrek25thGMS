@@ -1,3 +1,6 @@
+/// scr_gui
+/// functions to manage drawing ui elements
+
 /// @description: Draws the text when hovering over an eligible region in the Bridge play area
 function draw_hover_text() {
   var state_name = "";
