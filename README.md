@@ -30,21 +30,21 @@ You are Captain Kirk! Your mission is to destroy all enemies invading Federation
 
 ## HOW TO CONTRIBUTE
 
-This port was designed with modularity in mind. The easiest way to contribute translations is to take a look at the "lang/en.json" file and translate the dialog from that. Name your new file after the proper ISO 639-1 language code and add it to the "langs" folder.
+This port was designed with modularity in mind. The easiest way to contribute translations is to take a look at the `lang/en.json` file and translate the dialog from that. Name your new file after the proper ISO 639-1 language code and add it to the `langs/` folder.
 
 If it's valid JSON, it will appear in the languages selector in the Options menu.
 
-Since this port is open source (search https://github.com/JeodC for the repository), you may submit contributions via Issues or Pull Requests.
+Please submit contributions via issues or pull requests.
 
 ## CHANGES
 
-I attempted to keep as close to the original AGS game as possible with formulas. If any game mechanics feel off or are missing, please submit an Issue to the GitHub repository. The following changes were intentionally made:
+I attempted to keep as close to the original AGS game as possible with formulas. If any game mechanics feel off or are missing, please submit an issue to the GitHub repository. The following changes were intentionally made:
 
 - Native gamepad support added
 - Enhanced graphic effects added (some additional animations, effects applied during red alert)
 - Klingons in text changed to Enemies for future support of additional enemy types
 
-Potential ideas:
+## IDEAS:
 
 - I would really love to have an option to select different eras, perhaps beginning with The Next Generation. I am unaware of any similar pixel art however, and lack voice lines.
 - Custom scenarios could allow for enemies to explicitly seek out Starbases (a sort of "enhanced" game mode) where you as the player are forced to play defense as well as offense.
