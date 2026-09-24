@@ -13,6 +13,8 @@ global.options_buttons_created = false;
 text = "";
 from_credits = false;
 surf = -1;
+notice = "";
+notice_timer = 0;
 
 create_title_buttons();
 global.active_buttons = global.title_buttons;

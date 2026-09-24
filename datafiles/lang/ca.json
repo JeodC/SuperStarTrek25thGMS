@@ -1,6 +1,7 @@
 {
   "ui.newgame": "Joc nou",
   "ui.continue": "Continua",
+  "ui.loadfailed": "No s'ha pogut carregar la partida desada.",
   "ui.lang": "Idioma",
   "ui.options": "Opcions",
   "ui.exit": "Surt",
@@ -81,13 +82,13 @@
   "intro.new3": "Hem d'interceptar les {totalenemies} naus enemy abans que arribin a la seu de la Federació.",
   "intro.new4": "El senyor Spock calcula que ens queden {maxdays} dies i després, tot estarà perdut. ",
   "intro.new5": "Les {totalbases} bases estellars d'aquesta àrea ens seran d'ajuda, però hem de defensar-les dels atacs dels enemies.",
-  "intro.new6": "THi ha una base estellar en aquesta zona que ens serà d'ajuda, però l'hem de defensar dels atacs dels klingons.",
+  "intro.new6": "Hi ha una base estellar en aquesta zona que ens serà d'ajuda, però l'hem de defensar dels atacs enemics.",
   "intro.new7": "Ens apropam a la darrera posició on s'ha informat de dues naus enemy...",
   "intro.new8": "Pulseu una tecla per continuar",
   
   "gamestart.intro": "Ens acostam a Alfa Carinae II, capità",
   "gamestart.suggestlrs": "Capità, suggeresc usar els sensors de llarga distància per detectar les naus enemigues",
-  "gamestart.enemyspotted": "Capità Kirk, els sensors detecten un creuer de batalla klingon",
+  "gamestart.enemyspotted": "Capità Kirk, els sensors detecten un creuer de batalla enemic",
   "gamestart.help": "Pitgeu {key} per veure la llista d'opcions",
   
   "redalert.announce": "Entram en combat. Tothom a les estacions de batalla. Alerta vermella.",
@@ -118,11 +119,11 @@
   "torpedo.missed": "Capità, ha fallat la difució, senyor.",
   
   "weapons.noships": "Els sensors no mostren cap nau enemiga en aqueix quadrant, capità.",
-  "weapons.enemyhit": "Impacte directe. Impacte: {hp} unitats als klingon a {coord}",
+  "weapons.enemyhit": "Impacte directe. Impacte: {hp} unitats a l'enemic a {coord}",
   "weapons.lastone": "Cap altre nau a l'abast, capità.",
   "weapons.nodamage": "Els sensors indiquen que no hi ha danys a la nau, Capità.",
   "weapons.majordamage": "La nau enemiga està greument danyada.",
-  "weapons.energyleft": "Els sensors mostren que la nau klingon té {energy} unitats d'energia restants.",
+  "weapons.energyleft": "Els sensors mostren que la nau enemiga té {energy} unitats d'energia restants.",
   
   "lrs.request": "Senyor Spock, exploració completa del sector.",
   "lrs.damaged": "Capità, part de l'equipament no funciona. Sensors de llarga distància inoperatius.",
@@ -130,7 +131,7 @@
   "srs.damaged": "Capità, tenc problemes amb els sensors de la nau.",
   "srs.nodamage": "Els sensors indiquen no hi ha danys a la nau, capità.",
   "srs.majordamage": "La nau enemy està molt danyada.",
-  "srs.energy": "La nau klingon encara té {energy} unitats d'energia, capità.",
+  "srs.energy": "La nau enemiga encara té {energy} unitats d'energia, capità.",
   "srs.warn": "Hauríem d'aixecar els escuts.",
   
   "report.damage": "Senyor Scott, informi.",
@@ -150,8 +151,8 @@
   "engines.warp.engage": "Nou rumb, senyor Sulu.",
   "engines.warp.damaged": "Motors principals esgotats, senyor. Usant bateries d'emergència. Baixes, nou decessos.",
   "engines.warp.affirm": "Activant el motor de corbatura",
-  "engines.warn1": "Senyor, esteim sota l'atac klingon. Ens dispararan abans que puguem sortir del sector.",
-  "engines.warn2": "Senyor, esteim sota l'atac klingon. Ens dispararan si activam els motors.",
+  "engines.warn1": "Senyor, esteim sota l'atac enemic. Ens dispararan abans que puguem sortir del sector.",
+  "engines.warn2": "Senyor, esteim sota l'atac enemic. Ens dispararan si activam els motors.",
   "engines.aye": "A les ordres, senyor.",
   
   "move.toofar": "No podem agafar aqueixa velocitat, capità. Els motors comencen a mostrar signes d'estrès.",
@@ -197,14 +198,14 @@
   
   "condition.win1": "Un missatge de la Flota Estelar, capità. Canal prioritari. És l'almirall Fitzpatrick.",
   "condition.win2": "En pantalla, tinent.",
-  "condition.win3": "Enhorabona, capità! La flota errant klingon ha estat completament derrotada. Hem salvat la Federació!",
+  "condition.win3": "Enhorabona, capità! La flota enemiga ha estat completament derrotada. Hem salvat la Federació!",
   "condition.destroyed1": "El fàser ha traspassat els escuts, capità. Totes les cobertes informen de danys.",
   "condition.destroyed2": "L'Enterprise ha estat destruïda.",
   "condition.stranded1": "Capità. Totes les cobertes informen de danys.",
   "condition.stranded2": "Males notícies, capità. El convertidor de cristall de diliti s'ha fos per complet i no es pot reparar.",
   "condition.stranded3": "Els motors de corbatura i els d'impuls estan massa danyats. L'Enterprise no pot continuar. Partit perdut.",
   "condition.stranded4": "Motors de corbatura massa danyats. Encara que sobrevisquem a l'atac, l'Enterprise no podrà continuar. Hem perdut.",
-  "condition.timesup": "Massa tard. Els klingons han destruït la Federació. Hem perdut.",
+  "condition.timesup": "Massa tard. Els nostres enemics han destruït la Federació. Hem perdut.",
   
   "credits.1": "Disseny i programació",
   "credits.2": "Emanuele Bolognesi",

@@ -133,14 +133,14 @@ function queue_next_enemy_attack(i, post) {
 
   // Queue attack dialog
   array_push(global.queue, function() {
-    var idx = obj_controller_player.attack_indexes[global.index];
+    var idx = obj_controller_player.attack_indexes[global.index - 1];
     var data = obj_controller_player.attack_buffer[idx];
     return immediate_dialog( Speaker.Sulu, "battle.enemyfiring", noone, {coord: string(data.lx + 1) + "," + string(data.ly + 1)} );
   });
 
   // Queue visual effect
   array_push(global.queue, function() {
-    var idx = obj_controller_player.attack_indexes[global.index];
+    var idx = obj_controller_player.attack_indexes[global.index - 1];
     var data = obj_controller_player.attack_buffer[idx];
     var enemy = global.allenemies[data.idx];
 
@@ -167,7 +167,7 @@ function queue_next_enemy_attack(i, post) {
 
   // Queue damage application
   array_push(global.queue, function() {
-    var idx = obj_controller_player.attack_indexes[global.index];
+    var idx = obj_controller_player.attack_indexes[global.index - 1];
     var data = obj_controller_player.attack_buffer[idx];
     var keys = variable_struct_get_names(global.ent.system);
 
@@ -194,7 +194,7 @@ function queue_next_enemy_attack(i, post) {
     var enemy = global.allenemies[data.idx];
     if (is_struct(enemy)) {
       var emod = max(1.1, 3.0 + random(1.0));
-      enemy.energy = max(round(enemy.energy / emod), 0);
+      enemy.energy -= floor(enemy.energy / emod);
     }
 
     // Check for destruction
@@ -203,9 +203,6 @@ function queue_next_enemy_attack(i, post) {
       global.busy = true;
       array_resize(global.queue, global.index);
 
-      array_push(global.queue, function() {
-        return [immediate_dialog(Speaker.Spock, "redalert.shieldsdown")[0]];
-      });
       array_push(global.queue, function() {
         dialog_condition();
         return undefined;

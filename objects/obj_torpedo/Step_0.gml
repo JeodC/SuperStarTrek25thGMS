@@ -25,14 +25,9 @@ distance_traveled += speed / max(size_cell_x, size_cell_y);
 
 // Helper function to check base presence in current sector grid
 function check_base_at_cell(sx, sy, lx, ly) {
-    var sector = global.galaxy[sx][sy];
-    if (sector == undefined) return false;
-    if (!variable_struct_exists(sector, "bases")) return false;
-
-    var bases = sector.bases;
-    for (var b = 0; b < array_length(bases); b++) {
-        var base = bases[b];
-        if (is_struct(base) && base.lx == lx && base.ly == ly) {
+    for (var b = 0; b < array_length(global.allbases); b++) {
+        var base = global.allbases[b];
+        if (is_struct(base) && base.sx == sx && base.sy == sy && base.lx == lx && base.ly == ly) {
             return true;
         }
     }
@@ -52,14 +47,9 @@ function enemy_index_at_cell(sx, sy, lx, ly) {
 
 // Check stars in current sector at grid cell
 function star_at_cell(sx, sy, lx, ly) {
-    var sector = global.galaxy[sx][sy];
-    if (sector == undefined) return false;
-    if (!variable_struct_exists(sector, "stars")) return false;
-
-    var stars = sector.stars;
+    var stars = global.galaxy[sx][sy].star_positions;
     for (var s = 0; s < array_length(stars); s++) {
-        var star = stars[s];
-        if (is_struct(star) && star.lx == lx && star.ly == ly) {
+        if (stars[s][0] == lx && stars[s][1] == ly) {
             return true;
         }
     }
@@ -102,5 +92,9 @@ if (destroy_reason != "") {
     global.inputmode.type = undefined;
     global.inputmode.mode = InputMode.Bridge;
     obj_controller_player.display = Reports.Default;
+
+    if (global.galaxy[sx][sy].enemynum > 0) {
+        array_push(global.queue, function() { enemy_attack(); });
+    }
     instance_destroy();
 }

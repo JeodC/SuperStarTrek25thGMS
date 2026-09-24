@@ -163,10 +163,10 @@ function dialog_weapons(mode) {
       queue_dialog(Speaker.Kirk, "torpedo.fire", vo_kirk_arm_torpedo);
     obj_controller_player.speech_torparm = true;
     // Check response
-    if (global.ent.torpedoes < 1) {
-      queue_dialog(Speaker.Chekov, "torpedo.depleted");
-    } else if (global.ent.torpedoes == 0) {
+    if (global.ent.system.torpedoes < 15) {
       queue_dialog(Speaker.Spock, "torpedo.damaged");
+    } else if (global.ent.torpedoes < 1) {
+      queue_dialog(Speaker.Chekov, "torpedo.depleted");
     } else {
       queue_dialog(Speaker.Chekov, "torpedo.ready", vo_chekov_torpedoes);
       global.queue[array_length(global.queue)] = function() {

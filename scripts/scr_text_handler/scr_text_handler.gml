@@ -153,12 +153,16 @@ function normalize_text(str) {
   map[$ string(ord("ê"))] = "e";
   map[$ string(ord("Ë"))] = "E";
   map[$ string(ord("ë"))] = "e";
+  map[$ string(ord("Ğ"))] = "G";
+  map[$ string(ord("ğ"))] = "g";
   map[$ string(ord("Ì"))] = "I";
   map[$ string(ord("ì"))] = "i";
   map[$ string(ord("Î"))] = "I";
   map[$ string(ord("î"))] = "i";
   map[$ string(ord("Ï"))] = "I";
   map[$ string(ord("ï"))] = "i";
+  map[$ string(ord("İ"))] = "I";
+  map[$ string(ord("ı"))] = "i";
   map[$ string(ord("Ñ"))] = "N";
   map[$ string(ord("ñ"))] = "n";
   map[$ string(ord("Ò"))] = "O";

@@ -17,6 +17,7 @@ if (global.game.state == State.Intro) {
   dialog_enemy_check();
   get_sector_data();
   dialog_helptext();
+  alarm[0] = 30;
 }
 
 // If loaded set up states -- check for enemies and refresh local sector arrays for obj_player

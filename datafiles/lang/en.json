@@ -1,6 +1,7 @@
 {
   "ui.newgame": "New Game",
   "ui.continue": "Continue",
+  "ui.loadfailed": "The saved game could not be loaded.",
   "ui.lang": "Language",
   "ui.options": "Options",
   "ui.credits": "Credits",
@@ -92,7 +93,7 @@
   
   "gamestart.intro": "Approaching Alpha Carinae Two, Captain.",
   "gamestart.suggestlrs": "Captain, I suggest to use Long Range Sensors to detect enemy ships.",
-  "gamestart.enemyspotted": "Captain Kirk, Sensors are picking up a Klingon battle cruiser.",
+  "gamestart.enemyspotted": "Captain Kirk, Sensors are picking up an enemy battle cruiser.",
   "gamestart.help": "Press {key} for the List of Controls",
   
   "redalert.announce": "We are going to battle. All hands, battle stations. Red alert.",
@@ -155,7 +156,7 @@
   "engines.warp.engage": "Lay in a course, Mister Sulu.",
   "engines.warp.damaged": "Main engines are out, sir. We're on emergency power cells. Casualties, nine dead.",
   "engines.warp.affirm": "Activating warp engines",
-  "engines.warn1": "Sir, we are under attack. Klingons will fire before we can leave the sector.",
+  "engines.warn1": "Sir, we are under attack. Enemies will fire before we can leave the sector.",
   "engines.warn2": "Sir, we are under attack. Enemies will fire if we activate the engines.",
   "engines.aye": "Aye aye, Sir",
   

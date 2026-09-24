@@ -5,6 +5,7 @@
 switch (global.game.state) {
 case State.Title:
   draw_title_info();
+  draw_notice();
   break;
 case State.OptMenu:
   break;
@@ -35,12 +36,15 @@ function draw_title_info() {
   var spacing = 8;
 
   // Prevent text from going offscreen horizontally
-  var margin = 10;
+  var margin = 4;
   var gui_w = display_get_gui_width();
 
   // Adjust tx for centered text, ensuring text block stays within margins
-  var text_left_edge = tx - wrap / 2;
-  var text_right_edge = tx + wrap / 2;
+  var block_w = 0;
+  for (var i = 1; i <= 4; i++) {
+    block_w = max(block_w, string_width_ext(lang_get("title.info" + string(i)), spacing, wrap));
+  }
+  tx = min(tx, gui_w - margin - block_w / 2);
 
   draw_set_halign(fa_center);
   draw_set_valign(fa_top);
@@ -91,4 +95,23 @@ function draw_outline(tx, ty, text) {
   draw_text_ext(tx + 1, ty, text, spacing, wrap); // Right
   draw_text_ext(tx, ty - 1, text, spacing, wrap); // Up
   draw_text_ext(tx, ty + 1, text, spacing, wrap); // Down
+}
+
+function draw_notice() {
+  if (notice_timer <= 0)
+    return;
+
+  var tx = 160;
+  var ty = 80;
+
+  draw_set_halign(fa_center);
+  draw_set_valign(fa_top);
+  draw_set_color(c_black);
+  draw_text(tx - 1, ty, notice);
+  draw_text(tx + 1, ty, notice);
+  draw_text(tx, ty - 1, notice);
+  draw_text(tx, ty + 1, notice);
+  draw_set_color(global.t_colors.red);
+  draw_text(tx, ty, notice);
+  draw_set_halign(fa_left);
 }

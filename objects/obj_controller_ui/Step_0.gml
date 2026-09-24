@@ -18,3 +18,7 @@ if (from_credits) {
   create_title_buttons();
   from_credits = false;
 }
+
+if (notice_timer > 0) {
+  notice_timer--;
+}

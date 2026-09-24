@@ -24,6 +24,7 @@ function action_warp(sx, sy) {
   }
 
   // Check for energy
+  var diverted = false;
   if (energy_required > global.ent.energy) {
     var total_available = global.ent.energy + global.ent.shields;
 
@@ -32,18 +33,19 @@ function action_warp(sx, sy) {
       global.ent.shields -= needed;
       global.ent.energy += needed;
       queue_dialog(Speaker.Scott, "move.divert");
-      // Deduct energy for warp
-      global.ent.energy -= ceil(energy_required);
-      global.ent.isdocked = false;
-      show_debug_message("Warp to sector " + string(sx) + "," + string(sy) +
-                         " using " + string(ceil(energy_required)) +
-                         " units of energy.");
-      return true;
+      diverted = true;
     } else {
       queue_dialog(Speaker.Scott, "move.noenergy");
       return false;
     }
   }
+
+  // Warp allowed, deduct energy
+  global.ent.energy -= ceil(energy_required);
+  global.ent.isdocked = false;
+  show_debug_message("Warp to sector " + string(sx) + "," + string(sy) +
+                     " using " + string(ceil(energy_required)) +
+                     " units of energy.");
 
   // If sector has enemies, store warp destination and queue enemy attack
   if (sector.enemynum > 0) {
@@ -55,12 +57,15 @@ function action_warp(sx, sy) {
     return undefined;
   }
 
-  // Warp allowed, deduct energy
-  global.ent.energy -= ceil(energy_required);
-  global.ent.isdocked = false;
-  show_debug_message("Warp to sector " + string(sx) + "," + string(sy) +
-                     " using " + string(ceil(energy_required)) +
-                     " units of energy.");
+  if (diverted) {
+    obj_controller_player._warpto = [ sx, sy ];
+    array_push(global.queue, function() {
+      global.inputmode.mode = InputMode.Warp;
+      change_sector(obj_controller_player._warpto[0], obj_controller_player._warpto[1]);
+    });
+    return undefined;
+  }
+
   return true;
 }
 
@@ -131,7 +136,6 @@ function action_torpedo(tx, ty) {
   var torpedo = instance_create_layer(pixel_x, pixel_y, "Overlay", obj_torpedo);
 
   // Set torpedo properties
-  audio_play_sound(snd_torpedo, 0, 0, false);
   torpedo.direction = angle;
   torpedo.speed = 0.3;
   torpedo.grid_target_x = tx;
@@ -150,7 +154,7 @@ function action_apply_change(type, value) {
   switch (type) {
   case HoverState.Shields:
     var old_shields = global.ent.shields;
-    var new_shields = clamp(value, 0, global.ent.energy);
+    var new_shields = clamp(value, 0, global.ent.energy + old_shields);
     var shield_change = new_shields - old_shields;
 
     if (shield_change > 0) {
@@ -175,7 +179,7 @@ function action_apply_change(type, value) {
     break;
   case HoverState.Phasers:
     var old_phasers = global.ent.phasers;
-    var new_phasers = clamp(value, 0, global.ent.energy);
+    var new_phasers = clamp(value, 0, global.ent.energy + old_phasers);
     var phaser_change = new_phasers - old_phasers;
 
     if (phaser_change > 0) {

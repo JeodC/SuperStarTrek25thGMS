@@ -438,35 +438,39 @@ function generate_galaxy() {
   var base_count = 0;
   var all_occupied_cells = []; // Local array to track occupied cells
 
-  // Reset and verify sectors
-  for (var sx = 0; sx < 8; sx++) {
-    for (var sy = 0; sy < 8; sy++) {
-      var s = global.galaxy[sx][sy];
+  // Place enemies, starbases, stars, player
+  for (var tries = 0; tries < 10; tries++) {
+    // Reset and verify sectors
+    for (var sx = 0; sx < 8; sx++) {
+      for (var sy = 0; sy < 8; sy++) {
+        var s = global.galaxy[sx][sy];
 
-      // Reset fields to prevent memory accumulation
-      s.starnum = 0;
-      s.basenum = 0;
-      s.enemynum = 0;
-      s.star_positions = [];
-      s.available_cells = [];
-      for (var lx = 0; lx < 8; lx++) {
-        for (var ly = 0; ly < 8; ly++) {
-          array_push(s.available_cells, [ lx, ly ]);
+        // Reset fields to prevent memory accumulation
+        s.starnum = 0;
+        s.basenum = 0;
+        s.enemynum = 0;
+        s.star_positions = [];
+        s.available_cells = [];
+        for (var lx = 0; lx < 8; lx++) {
+          for (var ly = 0; ly < 8; ly++) {
+            array_push(s.available_cells, [ lx, ly ]);
+          }
         }
       }
     }
-  }
+    global.allenemies = [];
+    all_occupied_cells = [];
 
-  // Place enemies, starbases, stars, player
-  enemy_count = place_enemies(enemy_count, global.game.initenemies, all_occupied_cells);
-  global.game.totalenemies = enemy_count;
+    enemy_count = place_enemies(0, global.game.initenemies, all_occupied_cells);
+    if (enemy_count == global.game.initenemies)
+      break;
 
-  if (enemy_count != global.game.initenemies) {
     show_debug_message("Enemy count mismatch: Expected " +
                        string(global.game.initenemies) + ", placed " +
                        string(enemy_count));
-    game_restart();
   }
+  global.game.initenemies = enemy_count;
+  global.game.totalenemies = enemy_count;
 
   base_count =
       place_starbases(base_count, global.game.totalbases, all_occupied_cells);

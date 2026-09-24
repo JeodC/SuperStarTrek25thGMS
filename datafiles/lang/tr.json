@@ -1,6 +1,7 @@
 {
   "ui.newgame": "Yeni Oyun",
   "ui.continue": "Devam Et",
+  "ui.loadfailed": "Kayıtlı oyun yüklenemedi.",
   "ui.lang": "Dil",
   "ui.options": "Ayarlar",
   "ui.credits": "Künye",
@@ -93,7 +94,7 @@
   
   "gamestart.intro": "Alpha Carinae Two'ya yaklaşıyoruz, Kaptan.",
   "gamestart.suggestlrs": "Kaptan, düşman gemilerini tespit etmek için Uzun Menzil Sensörleri kullanmanızı öneririm.",
-  "gamestart.enemyspotted": "Kaptan Kirk, sensörler bir Klingon savaş kruvazörü tespit etti.",
+  "gamestart.enemyspotted": "Kaptan Kirk, sensörler bir düşman savaş kruvazörü tespit etti.",
   "gamestart.help": "Kontroller listesini görmek için {key} tuşuna basın",
   
   "redalert.announce": "Savaşa giriyoruz. Tüm personel savaş pozisyonlarına. Kırmızı alarm.",

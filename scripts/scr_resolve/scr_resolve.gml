@@ -162,7 +162,7 @@ function advancetime(days) {
   // If time has expired, handle loss
   if (daysleft < 1) {
     array_push(global.queue, function() {
-      dialog_condition();
+      update_ship_condition();
       return undefined;
     });
   }
@@ -207,7 +207,7 @@ function update_ship_condition() {
   var should_dialog = (new_condition == Condition.Stranded ||
                        new_condition == Condition.Destroyed ||
                        new_condition == Condition.NoTime);
-  if (should_dialog && old_condition != new_condition && !global.busy) {
+  if (should_dialog && old_condition != new_condition) {
     global.busy = true;
     array_resize(global.queue, global.index);
     array_push(
@@ -357,9 +357,6 @@ function get_sector_data(sx = global.ent.sx, sy = global.ent.sy) {
           obj_controller_input.srs_regions
         );
       }
-
-      // Set save alarm to persist progress
-      obj_controller_player.alarm[0] = 30;
     }
   }
 
@@ -525,7 +522,7 @@ function change_sector(x, y) {
       global.queue, function() {
         obj_controller_player.contactedbase = false;
         obj_controller_player.speech_phaserwarn = false;
-        obj_controller_player.speech_damaged = false;
+        obj_controller_player.speech_damage = false;
         if (random(1) < 0.7)
           obj_controller_player.speech_phaserfire = false;
         if (random(1) < 0.7)
@@ -629,7 +626,7 @@ function winlose() {
 
     // Score calculation
     var enemybonus = global.game.initenemies * 100;
-    var timebonus = max(0, global.game.maxdays - global.game.date);
+    var timebonus = max(0, global.game.maxdays - (global.game.date - global.game.t0));
     var basespenalty = global.game.totalbases * 100;
     var efficiencybonus =
         global.ent.energy + global.ent.shields + (global.ent.torpedoes * 20);
@@ -671,8 +668,9 @@ function handle_queue() {
         global.busy = true;
 
         // Call the next queued method
-        var result = global.queue[global.index]();
+        var next_method = global.queue[global.index];
         global.index++;
+        var result = next_method();
 
         // If function returns a struct and requests a delay, apply it
         if (is_struct(result) && result.delay) {

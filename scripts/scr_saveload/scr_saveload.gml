@@ -12,6 +12,17 @@ function save_game(filename) {
   var buf = buffer_create(1024, buffer_grow, 1);
 
   try {
+    // Sanitize allenemies array
+    var live_enemies = [];
+    for (var i = 0; i < array_length(global.allenemies); i++) {
+      var e = global.allenemies[i];
+      if (is_struct(e) && variable_instance_exists(e, "sx") &&
+          variable_instance_exists(e, "sy")) {
+        array_push(live_enemies, e);
+      }
+    }
+    global.game.totalenemies = array_length(live_enemies);
+
     // Write version
     buffer_write(buf, buffer_u32, 1); // Version 1
 
@@ -56,22 +67,10 @@ function save_game(filename) {
       }
     }
 
-    // Sanitize allenemies array
-    var cleaned_enemies = [];
-    for (var i = 0; i < array_length(global.allenemies); i++) {
-      var e = global.allenemies[i];
-      if (is_struct(e) && variable_instance_exists(e, "sx") &&
-          variable_instance_exists(e, "sy")) {
-        array_push(cleaned_enemies, e);
-      }
-    }
-    global.allenemies = cleaned_enemies;
-    global.game.totalenemies = array_length(global.allenemies);
-
     // Write allenemies (array of EnemyShip structs)
-    buffer_write(buf, buffer_u32, array_length(global.allenemies));
-    for (var i = 0; i < array_length(global.allenemies); i++) {
-      var enemy = global.allenemies[i];
+    buffer_write(buf, buffer_u32, array_length(live_enemies));
+    for (var i = 0; i < array_length(live_enemies); i++) {
+      var enemy = live_enemies[i];
       buffer_write(buf, buffer_s32, enemy.sx);
       buffer_write(buf, buffer_s32, enemy.sy);
       buffer_write(buf, buffer_s32, enemy.lx);
@@ -180,69 +179,76 @@ function load_game(filename) {
 
   if (!file_exists(filename)) {
     show_debug_message("Save file not found: " + filename);
-    return false;
+    return {ok : false};
   }
 
   var buf = buffer_load(filename);
+  if (buf == -1) {
+    show_debug_message("Could not read save file: " + filename);
+    return {ok : false};
+  }
+
   try {
     // Read version
     var version = buffer_read(buf, buffer_u32);
     if (version != 1) {
-      show_debug_message("Unsupported save version: " + string(version));
-      buffer_delete(buf);
-      return false;
+      throw ("Unsupported save version: " + string(version));
     }
 
     // Read game struct
-    global.game = Game();
-    global.game.difficulty = buffer_read(buf, buffer_f32);
-    global.game.maxenergy = buffer_read(buf, buffer_f32);
-    global.game.maxtorpedoes = buffer_read(buf, buffer_f32);
-    global.game.enemypower = buffer_read(buf, buffer_f32);
-    global.game.maxstars = buffer_read(buf, buffer_s32);
-    global.game.totalbases = buffer_read(buf, buffer_s32);
-    global.game.totalenemies = buffer_read(buf, buffer_s32);
-    global.game.initenemies = buffer_read(buf, buffer_s32);
-    global.game.maxdays = buffer_read(buf, buffer_s32);
-    global.game.date = buffer_read(buf, buffer_s32);
-    global.game.t0 = buffer_read(buf, buffer_s32);
-    global.game.score = buffer_read(buf, buffer_f32);
-    global.game.state = buffer_read(buf, buffer_s32);
+    var game = Game();
+    game.difficulty = buffer_read(buf, buffer_f32);
+    game.maxenergy = buffer_read(buf, buffer_f32);
+    game.maxtorpedoes = buffer_read(buf, buffer_f32);
+    game.enemypower = buffer_read(buf, buffer_f32);
+    game.maxstars = buffer_read(buf, buffer_s32);
+    game.totalbases = buffer_read(buf, buffer_s32);
+    game.totalenemies = buffer_read(buf, buffer_s32);
+    game.initenemies = buffer_read(buf, buffer_s32);
+    game.maxdays = buffer_read(buf, buffer_s32);
+    game.date = buffer_read(buf, buffer_s32);
+    game.t0 = buffer_read(buf, buffer_s32);
+    game.score = buffer_read(buf, buffer_f32);
+    game.state = check_save_value(buffer_read(buf, buffer_s32), 0, State.Lose, "game state");
+    check_save_value(game.difficulty, 0, 4, "difficulty");
 
     // Read ent (Ship struct)
-    global.ent = read_ship(buf);
+    var ent = read_ship(buf);
+    check_save_value(ent.condition, 0, Condition.Win, "ship condition");
+    check_save_value(ent.sx, 0, 7, "ship sector x");
+    check_save_value(ent.sy, 0, 7, "ship sector y");
 
     // Read galaxy (8x8 array of Sector structs)
-    global.galaxy = array_create(8);
+    var galaxy = array_create(8);
     for (var sx = 0; sx < 8; sx++) {
-      global.galaxy[sx] = array_create(8);
+      galaxy[sx] = array_create(8);
       for (var sy = 0; sy < 8; sy++) {
         var sector = Sector();
         sector.enemynum = buffer_read(buf, buffer_s32);
         sector.basenum = buffer_read(buf, buffer_s32);
         sector.starnum = buffer_read(buf, buffer_s32);
         // Read star_positions array
-        var star_len = buffer_read(buf, buffer_u32);
+        var star_len = check_save_value(buffer_read(buf, buffer_u32), 0, 64, "star count");
         sector.star_positions = array_create(star_len);
         for (var i = 0; i < star_len; i++) {
           sector.star_positions[i] =
               [ buffer_read(buf, buffer_f32), buffer_read(buf, buffer_f32) ];
         }
         // Read available_cells array
-        var cells_len = buffer_read(buf, buffer_u32);
+        var cells_len = check_save_value(buffer_read(buf, buffer_u32), 0, 64, "cell count");
         sector.available_cells = array_create(cells_len);
         for (var i = 0; i < cells_len; i++) {
           sector.available_cells[i] =
               [ buffer_read(buf, buffer_s32), buffer_read(buf, buffer_s32) ];
         }
         sector.seen = buffer_read(buf, buffer_bool);
-        global.galaxy[sx][sy] = sector;
+        galaxy[sx][sy] = sector;
       }
     }
 
     // Read allenemies (array of EnemyShip structs)
-    var enemies_len = buffer_read(buf, buffer_u32);
-    global.allenemies = array_create(enemies_len);
+    var enemies_len = check_save_value(buffer_read(buf, buffer_u32), 0, 64 * 3, "enemy count");
+    var enemies = array_create(enemies_len);
     for (var i = 0; i < enemies_len; i++) {
       var enemy = EnemyShip();
       enemy.sx = buffer_read(buf, buffer_s32);
@@ -252,12 +258,12 @@ function load_game(filename) {
       enemy.energy = buffer_read(buf, buffer_f32);
       enemy.maxenergy = buffer_read(buf, buffer_f32);
       enemy.dir = buffer_read(buf, buffer_f32);
-      global.allenemies[i] = enemy;
+      enemies[i] = enemy;
     }
 
     // Read allbases (array of Starbase structs)
-    var bases_len = buffer_read(buf, buffer_u32);
-    global.allbases = array_create(bases_len);
+    var bases_len = check_save_value(buffer_read(buf, buffer_u32), 0, 64, "starbase count");
+    var bases = array_create(bases_len);
     for (var i = 0; i < bases_len; i++) {
       var base = Starbase();
       base.sx = buffer_read(buf, buffer_s32);
@@ -266,12 +272,21 @@ function load_game(filename) {
       base.ly = buffer_read(buf, buffer_s32);
       // base.energy = buffer_read(buf, buffer_f32);
       // base.num = buffer_read(buf, buffer_s32);
-      global.allbases[i] = base;
+      bases[i] = base;
     }
 
     // Read runtime (player_state struct)
     var has_runtime = buffer_read(buf, buffer_bool);
     var loaded_player_state = has_runtime ? read_player_state(buf) : undefined;
+    if (has_runtime) {
+      check_save_value(loaded_player_state.display, 0, Reports.Default, "display");
+    }
+
+    global.game = game;
+    global.ent = ent;
+    global.galaxy = galaxy;
+    global.allenemies = enemies;
+    global.allbases = bases;
 
     show_debug_message("Game loaded from " + filename);
     buffer_delete(buf);
@@ -279,8 +294,15 @@ function load_game(filename) {
   } catch (e) {
     show_debug_message("Error loading save file: " + string(e));
     buffer_delete(buf);
-    return false;
+    return {ok : false};
   }
+}
+
+function check_save_value(value, lo, hi, what) {
+  if (!is_numeric(value) || value < lo || value > hi) {
+    throw ("Bad " + what + " in save file: " + string(value));
+  }
+  return value;
 }
 
 /// @description: Reads a Ship struct from the buffer

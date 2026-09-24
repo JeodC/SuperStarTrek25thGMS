@@ -184,7 +184,7 @@ function draw_level_hud() {
   draw_sprite(spr_btn_arrow, 0, bx, by);                               // Down
   draw_sprite(spr_btn_confirm, 0, bx, by + 18);
   draw_set_color(global.t_colors.yellow);
-  draw_text(60, 55, lang_format(key, {energy : global.ent.energy}));
+  draw_text(60, 55, lang_format(key, {energy : global.ent.energy + global.inputmode.tmp_old}));
 }
 
 /// @description: Draws the dynamic numbers in conjunction with draw_level_hud
@@ -193,7 +193,7 @@ function draw_numbers() {
     return;
   }
   var value = global.inputmode.tmp_new;
-  var max_value = global.ent.energy;
+  var max_value = global.ent.energy + global.inputmode.tmp_old;
   draw_set_color(global.t_colors.yellow);
   draw_text(60, 65, string(value) + "/" + string(max_value));
 }

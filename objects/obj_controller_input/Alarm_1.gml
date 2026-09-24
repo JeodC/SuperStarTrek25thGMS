@@ -2,7 +2,9 @@
 /// @description Processes UI actions based on global.menu_selected
 
 var menu_id = global.menu_selected;
-audio_stop_sound(mus_title);
+if (menu_id != "ui.continue") {
+  audio_stop_sound(mus_title);
+}
 
 // Check what the player picked
 switch (menu_id) {
@@ -23,6 +25,7 @@ switch (menu_id) {
 
     var result = load_game("sst25th.dat");
     if (result.ok) {
+      audio_stop_sound(mus_title);
       global.game.state = State.Loading;
       global.inputmode.mode = InputMode.Bridge;
       global.loaded_state = result.state;
@@ -31,6 +34,8 @@ switch (menu_id) {
       show_debug_message("No valid save found or file corrupted!");
       global.game.state = State.Title;
       create_title_buttons();
+      obj_controller_ui.notice = lang_get("ui.loadfailed");
+      obj_controller_ui.notice_timer = 240;
     }
     break;
   case "ui.options":

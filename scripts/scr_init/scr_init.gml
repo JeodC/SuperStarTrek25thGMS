@@ -3,9 +3,10 @@
 
 /// @description: Initializes application
 function scr_init() {
+  randomize();
 
   // UI
-  global.version = "1.0.3";
+  global.version = "1.0.4";
   global.lang_data = {};
   global.lang_index = 0;
   global.menu_selected = -1;

@@ -103,6 +103,7 @@ function reset_player_state() {
         global.queue, function() {
           repair_random_systems(); // Repair random systems
           dialog_enemy_check();    // Check for enemies
+          obj_controller_player.alarm[0] = 30;
         });
   }
 }
@@ -174,9 +175,9 @@ function add_credit_line() {
         var next_text_len = string_length(next_text);
 
         var base_timer = 10;   // Base duration (in frames) before showing the next credit line
-        var min_timer = 100;   // Minimum allowed duration for the timer (prevents it from being too short)
+        var min_timer = 80;    // Minimum allowed duration for the timer (prevents it from being too short)
         var name_timer = 14;   // Short timer for lines considered "names" (usually short lines)
-        var max_timer = 80;    // Maximum allowed duration for the timer (prevents it from being too long)
+        var max_timer = 100;   // Maximum allowed duration for the timer (prevents it from being too long)
         var length_factor = 2; // Multiplier applied to the length of the next line to increase timer duration proportionally
         var name_threshold = 20; // Maximum length (in characters) for a line to be considered a "name" (short line)
 
@@ -250,23 +251,14 @@ function check_credits_finished() {
 
 /// @description Handle input to exit credits
 function handle_credits_input() {
-  if (!credits_finished && input_any()) {
-    audio_stop_all();
-    audio_play_sound(mus_title, 0, false);
-    global.game.state = State.Title;
-    cleanup_buttons();
-    global.inputmode.mode = InputMode.UI;
-    obj_controller_ui.from_credits = true;
-    room_goto(rm_title);
-  } else if (credits_finished && input_any()) {
-    audio_stop_all();
-    audio_play_sound(mus_title, 0, false);
-    global.game.state = State.Title;
-    cleanup_buttons();
-    global.inputmode.mode = InputMode.UI;
-    obj_controller_ui.from_credits = true;
-    room_goto(rm_title);
+  if (input_any()) {
     reset_game();
+    audio_play_sound(mus_title, 0, false);
+    global.game.state = State.Title;
+    cleanup_buttons();
+    global.inputmode.mode = InputMode.UI;
+    obj_controller_ui.from_credits = true;
+    room_goto(rm_title);
   }
 }
 

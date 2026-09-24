@@ -253,7 +253,6 @@ function handle_bridge_input() {
     if (global.input.confirm) {
       action = hover_state;
       last_state = hover_state;
-      execute_hover_action(action);
       global.input.confirm = false;
     }
 
@@ -358,9 +357,9 @@ function handle_hover_action(action) {
 
   case HoverState.ScottStatus:
   case HoverState.MissionStatus:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     if (global.ent.system.srs > 10) {
       var report =
           (action == HoverState.ScottStatus) ? Reports.Damage : Reports.Mission;
@@ -376,9 +375,9 @@ function handle_hover_action(action) {
     break;
 
   case HoverState.LongRangeSensors:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     if (global.ent.system.lrs > 10 && global.ent.system.srs > 10) {
       global.queue[array_length(global.queue)] = function() {
         obj_controller_player.display = Reports.Scan;
@@ -389,9 +388,9 @@ function handle_hover_action(action) {
     break;
 
   case HoverState.WarpSpeed:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     break;
 
   case HoverState.GalacticMap:
@@ -420,21 +419,21 @@ function handle_hover_action(action) {
     break;
 
   case HoverState.ImpulseSpeed:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     break;
 
   case HoverState.Torpedoes:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     break;
 
   case HoverState.DockingProcedures:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     break;
 
   case HoverState.Shields:
@@ -442,9 +441,9 @@ function handle_hover_action(action) {
     break;
 
   case HoverState.Phasers:
-    global.queue[array_length(global.queue)] = function() {
+    global.queue[array_length(global.queue)] = method({action : action}, function() {
       return dialog_response(action);
-    };
+    });
     break;
   case HoverState.Options:
     if (!instance_exists(obj_fade)) {
@@ -543,7 +542,8 @@ function handle_warp_input() {
   }
 
   // Confirm input
-  if (global.input.confirm && !obj_controller_dialog.show_text) {
+  if (global.input.confirm && !obj_controller_dialog.show_text &&
+      global.index >= array_length(global.queue)) {
     var tx = global.inputmode.cursor_x;
     var ty = global.inputmode.cursor_y;
     var result = action_warp(tx, ty);
@@ -753,7 +753,7 @@ function handle_manage_input() {
   if (obj_controller_dialog.show_text)
     return;
   var type = global.inputmode.type;
-  var max_level = global.ent.energy;
+  var max_level = global.ent.energy + global.inputmode.tmp_old;
   var increment = 50;
   var bx = 264;
   var by = 58;
@@ -896,5 +896,6 @@ function check_shortcuts() {
     action = HoverState.Options;
   if (keyboard_check_pressed(vk_f1))
     action = HoverState.Help;
-  execute_hover_action(action);
+  if (action != -1)
+    execute_hover_action(action);
 }

@@ -46,6 +46,7 @@
     {"$GMIncludedFile":"","%Name":"ca.json","CopyToMask":-1,"filePath":"datafiles/lang","name":"ca.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"en.json","CopyToMask":-1,"filePath":"datafiles/lang","name":"en.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"README.txt","CopyToMask":-1,"filePath":"datafiles","name":"README.txt","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"tr.json","CopyToMask":-1,"filePath":"datafiles/lang","name":"tr.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
   "isEcma":false,
   "LibraryEmitters":[],
